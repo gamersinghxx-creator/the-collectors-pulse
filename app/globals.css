@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-vault-bg: var(--vault-bg);
+  --color-vault-bg-alt: var(--vault-bg-alt);
+  --color-vault-card: var(--vault-card);
+  --color-vault-border: var(--vault-border);
+  --color-vault-border-hover: var(--vault-border-hover);
+  --color-accent-tcg: #3b82f6;
+  --color-accent-watches: #f59e0b;
+  --color-accent-figures: #ef4444;
+  --color-accent-restock: #10b981;
+  --font-inter: var(--font-inter);
+  --font-outfit: var(--font-outfit);
+
+  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-live-blink: live-blink 1.5s ease-in-out infinite;
+  --animate-ticker-scroll: ticker-scroll 30s linear infinite;
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,0,0,0); }
+    50% { box-shadow: 0 0 20px var(--glow-color, rgba(255,255,255,0.2)); }
+  }
+  @keyframes live-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+@layer base {
+  :root {
+    --vault-bg: #f8fafc;
+    --vault-bg-alt: #f1f5f9;
+    --vault-card: rgba(255, 255, 255, 0.6);
+    --vault-border: rgba(0, 0, 0, 0.05);
+    --vault-border-hover: rgba(0, 0, 0, 0.1);
+  }
+  .dark {
+    --vault-bg: #0b0c10;
+    --vault-bg-alt: #12141a;
+    --vault-card: rgba(255, 255, 255, 0.03);
+    --vault-border: rgba(255, 255, 255, 0.05);
+    --vault-border-hover: rgba(255, 255, 255, 0.15);
+  }
+}
+
+body {
+  background-color: var(--color-vault-bg);
+  color: #111827; /* default light mode text */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  color: #ededed;
+}
