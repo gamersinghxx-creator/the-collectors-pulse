@@ -1,4 +1,7 @@
 import { notFound } from 'next/navigation';
+
+// Revalidate article pages every 5 minutes
+export const revalidate = 300;
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabase/client';

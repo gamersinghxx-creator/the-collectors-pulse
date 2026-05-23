@@ -1,4 +1,7 @@
 import Link from 'next/link';
+
+// Revalidate this page every 60 seconds so new scraper data appears automatically
+export const revalidate = 60;
 import BentoGrid from '../components/BentoGrid';
 import TrendingSidebar from '../components/TrendingSidebar';
 import LiveTicker from '../components/LiveTicker';
@@ -19,8 +22,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       const { data, error } = await supabase
         .from('news_items')
         .select('*')
+        .eq('processing_status', 'published')
         .order('published_at', { ascending: false })
-        .limit(20);
+        .limit(50);
       
       if (!error && data && data.length > 0) {
         rawItems = data as NewsItem[];
