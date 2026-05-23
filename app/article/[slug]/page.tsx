@@ -23,6 +23,13 @@ const SOURCE_ICONS = {
   facebook: MessageCircle,
 };
 
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  tcg: '/fallback_tcg.png',
+  figures: '/fallback_figures.png',
+  watches: '/fallback_watches.png',
+  general: '/fallback_general.png',
+};
+
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
@@ -63,23 +70,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         {/* Hero Section */}
         <div className="relative w-full aspect-[21/9] md:aspect-[2.5/1] bg-[var(--color-vault-bg-alt)] rounded-3xl overflow-hidden mb-10 shadow-2xl border border-[var(--color-vault-border)]">
-          {item.image_url ? (
-            <Image
-              src={item.image_url}
+          <Image
+              src={item.image_url || CATEGORY_FALLBACK_IMAGES[item.category?.toLowerCase()] || '/fallback_general.png'}
               alt={item.title}
               fill
               sizes="(max-width: 1200px) 100vw, 1200px"
               className="object-cover"
               placeholder="blur"
               blurDataURL={item.thumbnail_url || blurDataURL}
-              unoptimized={item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com')}
+              unoptimized={!!item.image_url && (item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com'))}
               priority
             />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-              <Globe className="w-32 h-32" />
-            </div>
-          )}
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-vault-bg)] via-transparent to-transparent opacity-60" />
         </div>
 

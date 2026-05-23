@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { Hash, Webhook, Rss, Flame, Globe, MessageCircle, MessageSquare } from 'lucide-react';
+import { Hash, Rss, Flame, Globe, MessageCircle, MessageSquare } from 'lucide-react';
 import { NewsItem } from '../types';
 
 interface NewsCardProps {
@@ -14,11 +14,18 @@ interface NewsCardProps {
 }
 
 const CATEGORY_STYLES = {
-  tcg: { hex: '#3b82f6', className: 'border-l-[var(--color-accent-tcg)] text-[var(--color-accent-tcg)]' },
-  figures: { hex: '#ef4444', className: 'border-l-[var(--color-accent-figures)] text-[var(--color-accent-figures)]' },
-  watches: { hex: '#f59e0b', className: 'border-l-[var(--color-accent-watches)] text-[var(--color-accent-watches)]' },
-  general: { hex: '#9ca3af', className: 'border-l-gray-400 text-gray-400' },
+  tcg: { hex: '#3b82f6', className: 'border-l-[var(--color-accent-tcg)] text-[var(--color-accent-tcg)]', gradient: 'from-blue-900/80 via-blue-800/40 to-transparent' },
+  figures: { hex: '#ef4444', className: 'border-l-[var(--color-accent-figures)] text-[var(--color-accent-figures)]', gradient: 'from-red-900/80 via-red-800/40 to-transparent' },
+  watches: { hex: '#f59e0b', className: 'border-l-[var(--color-accent-watches)] text-[var(--color-accent-watches)]', gradient: 'from-amber-900/80 via-amber-800/40 to-transparent' },
+  general: { hex: '#9ca3af', className: 'border-l-gray-400 text-gray-400', gradient: 'from-gray-900/80 via-gray-800/40 to-transparent' },
 } as const;
+
+const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  tcg: '/fallback_tcg.png',
+  figures: '/fallback_figures.png',
+  watches: '/fallback_watches.png',
+  general: '/fallback_general.png',
+};
 
 const SOURCE_ICONS = {
   twitter: Hash,
@@ -69,23 +76,22 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
 
         {/* Image Container with Dynamic Gradient Overlay */}
         <div className="relative w-full aspect-[4/3] bg-[var(--color-vault-bg-alt)] overflow-hidden">
-          {item.image_url ? (
-            <Image
-              src={item.image_url}
-              alt={item.title}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-              placeholder="blur"
-              blurDataURL={item.thumbnail_url || blurDataURL}
-              unoptimized={item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com')}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-              <Webhook className="w-20 h-20" />
-            </div>
+          {/* Always show an image — real one or category fallback */}
+          <Image
+            src={item.image_url || CATEGORY_FALLBACK_IMAGES[item.category.toLowerCase()] || '/fallback_general.png'}
+            alt={item.title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+            placeholder="blur"
+            blurDataURL={item.thumbnail_url || blurDataURL}
+            unoptimized={!!item.image_url && (item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com'))}
+          />
+          {/* If no real image, show a category gradient + label overlay */}
+          {!item.image_url && (
+            <div className={`absolute inset-0 bg-gradient-to-t ${styleConf.gradient} opacity-60`} />
           )}
-          {/* Subtle gradient that darkens towards the bottom to make the title pop */}
+          {/* Standard bottom gradient to make title pop */}
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-vault-card)] via-[var(--color-vault-card)]/40 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-70" />
         </div>
 
