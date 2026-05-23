@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 
-// Revalidate article pages every 5 minutes
+// Force dynamic rendering - never pre-render at build time
+// This page needs live Supabase data and env vars at runtime
+export const dynamic = 'force-dynamic';
 export const revalidate = 300;
 import Image from 'next/image';
 import Link from 'next/link';

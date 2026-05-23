@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
-// Revalidate this page every 60 seconds so new scraper data appears automatically
+// Force dynamic rendering - fetch fresh Supabase data at runtime, not build time
+export const dynamic = 'force-dynamic';
 export const revalidate = 60;
 import BentoGrid from '../components/BentoGrid';
 import TrendingSidebar from '../components/TrendingSidebar';
