@@ -19,7 +19,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   // Try Supabase first
   try {
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'placeholder') {
       const { data, error } = await supabase
         .from('news_items')
         .select('*')
@@ -32,6 +32,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     }
   } catch (err) {
     console.error("Failed to fetch article from Supabase:", err);
+  }
+
+  // Fallback to live market data search
+  if (!item) {
+    try {
+      const { fetchLiveMarketData } = await import('../../../lib/liveFetcher');
+      const liveItems = await fetchLiveMarketData();
+      item = liveItems.find(i => i.slug === slug) || null;
+    } catch (err) {
+      console.error("Failed to fetch live article fallback:", err);
+    }
   }
 
   // Fallback to mock data

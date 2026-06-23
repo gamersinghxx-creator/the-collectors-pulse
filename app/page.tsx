@@ -12,16 +12,17 @@ import LiveTicker from '../components/LiveTicker';
 import AdSlot from '../components/AdSlot';
 import { mockItems } from '../lib/mockData';
 import { supabase } from '../lib/supabase/client';
+import { fetchLiveMarketData } from '../lib/liveFetcher';
 import { NewsItem } from '../types';
 
 export default async function HomePage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const params = await searchParams;
   const currentCategory = params.category?.toUpperCase() || 'ALL';
 
-  let rawItems: NewsItem[] = mockItems;
+  let rawItems: NewsItem[] = [];
   
   try {
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_URL !== 'placeholder') {
       const { data, error } = await supabase
         .from('news_items')
         .select('*')
@@ -35,6 +36,20 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
     }
   } catch (err) {
     console.error("Failed to fetch from Supabase:", err);
+  }
+
+  // Fallback: If Supabase returns no data (or is unconfigured), query real-time market feeds directly!
+  if (rawItems.length === 0) {
+    try {
+      rawItems = await fetchLiveMarketData();
+    } catch (err) {
+      console.error("Failed to fetch live market data:", err);
+    }
+  }
+
+  // Double fallback: if live feeds also fail, use mock items
+  if (rawItems.length === 0) {
+    rawItems = mockItems;
   }
 
   // Ticker and Trending items
