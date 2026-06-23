@@ -16,7 +16,15 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <div className="w-9 h-9" />;
+    return (
+      <button
+        disabled
+        className="p-2 rounded-lg bg-[var(--color-vault-card)] border border-[var(--color-vault-border)] text-transparent opacity-50 cursor-not-allowed"
+        aria-label="Toggle theme"
+      >
+        <div className="h-5 w-5" />
+      </button>
+    );
   }
 
   return (

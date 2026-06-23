@@ -145,8 +145,13 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
       allItems.push(...list);
     });
 
+    // Deduplicate items by ID to prevent duplicate React keys
+    const uniqueItems = allItems.filter((item, index, self) =>
+      self.findIndex(t => t.id === item.id) === index
+    );
+
     // Sort items newest first
-    return allItems.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+    return uniqueItems.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
   } catch (globalErr) {
     console.error('[LiveFetcher] Global fetch error:', globalErr);
     return [];

@@ -108,7 +108,7 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
                 {item.source_name}
               </span>
             </div>
-            <span className="font-inter text-xs text-gray-400 dark:text-gray-500 font-medium">
+            <span suppressHydrationWarning className="font-inter text-xs text-gray-400 dark:text-gray-500 font-medium">
               {item.published_at ? formatDistanceToNow(new Date(item.published_at), { addSuffix: true }) : 'Just now'}
             </span>
           </div>

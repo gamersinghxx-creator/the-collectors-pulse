@@ -120,7 +120,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </h1>
 
           <div className="flex items-center gap-4 text-sm font-inter text-gray-500 dark:text-gray-400">
-            <span>{item.published_at ? format(new Date(item.published_at), 'MMMM d, yyyy • h:mm a') : 'Recently'}</span>
+            <span suppressHydrationWarning>{item.published_at ? format(new Date(item.published_at), 'MMMM d, yyyy • h:mm a') : 'Recently'}</span>
             <span>•</span>
             <span className="flex items-center gap-1">
               Via {item.source_name}
