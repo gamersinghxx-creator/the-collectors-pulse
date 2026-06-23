@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import Script from 'next/script';
 
 interface AdSlotProps {
   slotId: string;
@@ -29,8 +28,8 @@ export default function AdSlot({ slotId, className = '', adFormat = 'auto' }: Ad
   return (
     <div className={`overflow-hidden relative ${className}`}>
       {isDev && (
-        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          Ad Slot Placeholder [{adFormat}]
+        <span className="absolute inset-0 flex items-center justify-center pointer-events-none text-gray-300 dark:text-gray-700 text-xs font-mono opacity-50">
+          AD · {adFormat}
         </span>
       )}
       <ins

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Flame } from 'lucide-react';
 import { NewsItem } from '../types';
+import { getCategoryStyle } from '../lib/constants';
 import Link from 'next/link';
 
 interface TrendingSidebarProps {
@@ -27,10 +28,7 @@ export default function TrendingSidebar({ initialTrending }: TrendingSidebarProp
       <div className="flex flex-col gap-6">
         <AnimatePresence>
           {trending.map((item, index) => {
-            const HypeBarColor = item.category === 'TCG' ? 'bg-[var(--color-accent-tcg)]' : 
-                                 item.category === 'Figures' ? 'bg-[var(--color-accent-figures)]' : 
-                                 item.category === 'Watches' ? 'bg-[var(--color-accent-watches)]' : 
-                                 'bg-gray-400';
+            const style = getCategoryStyle(item.category);
 
             return (
               <motion.div
@@ -41,11 +39,11 @@ export default function TrendingSidebar({ initialTrending }: TrendingSidebarProp
                 transition={{ delay: index * 0.1, ease: 'easeOut' }}
                 className="group flex gap-4"
               >
-                <div className="font-outfit text-3xl font-black text-[var(--color-vault-border)] opacity-60 w-6 text-center group-hover:text-gray-400 dark:group-hover:text-gray-500 transition-colors">
+                <div className="font-outfit text-3xl font-black text-gray-300 dark:text-gray-600 w-6 text-center group-hover:text-gray-400 dark:group-hover:text-gray-500 transition-colors">
                   {index + 1}
                 </div>
                 <div className="flex-1">
-                  <span className="font-outfit text-[10px] font-extrabold uppercase tracking-widest text-[var(--color-accent-tcg)] mb-1 block opacity-80">
+                  <span className={`font-outfit text-[10px] font-extrabold uppercase tracking-widest mb-1 block opacity-90 ${style.text}`}>
                     {item.category}
                   </span>
                   <Link href={`/article/${item.slug}`}>
@@ -58,7 +56,8 @@ export default function TrendingSidebar({ initialTrending }: TrendingSidebarProp
                       initial={{ width: 0 }}
                       animate={{ width: `${(item.hype_score / 10) * 100}%` }}
                       transition={{ duration: 1, delay: 0.5 + (index * 0.1), ease: "easeOut" }}
-                      className={`h-full ${HypeBarColor} shadow-[0_0_10px_currentColor]`}
+                      className={`h-full rounded-full shadow-[0_0_10px_currentColor]`}
+                      style={{ backgroundColor: style.hex }}
                     />
                   </div>
                 </div>

@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { Hash, Rss, Flame, Globe, MessageCircle, MessageSquare } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { NewsItem } from '../types';
+import { getCategoryStyle, getFallbackImage, getSourceIcon, BLUR_DATA_URL } from '../lib/constants';
 
 interface NewsCardProps {
   item: NewsItem;
@@ -13,33 +15,20 @@ interface NewsCardProps {
   className?: string;
 }
 
-const CATEGORY_STYLES = {
-  tcg: { hex: '#3b82f6', className: 'border-l-[var(--color-accent-tcg)] text-[var(--color-accent-tcg)]', gradient: 'from-blue-900/80 via-blue-800/40 to-transparent' },
-  figures: { hex: '#ef4444', className: 'border-l-[var(--color-accent-figures)] text-[var(--color-accent-figures)]', gradient: 'from-red-900/80 via-red-800/40 to-transparent' },
-  watches: { hex: '#f59e0b', className: 'border-l-[var(--color-accent-watches)] text-[var(--color-accent-watches)]', gradient: 'from-amber-900/80 via-amber-800/40 to-transparent' },
-  general: { hex: '#9ca3af', className: 'border-l-gray-400 text-gray-400', gradient: 'from-gray-900/80 via-gray-800/40 to-transparent' },
-} as const;
-
-const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
-  tcg: '/fallback_tcg.png',
-  figures: '/fallback_figures.png',
-  watches: '/fallback_watches.png',
-  general: '/fallback_general.png',
-};
-
-const SOURCE_ICONS = {
-  twitter: Hash,
-  reddit: MessageSquare,
-  rss: Rss,
-  scrape: Globe,
-  facebook: MessageCircle,
-};
-
 export default function NewsCard({ item, index, className = '' }: NewsCardProps) {
-  const Icon = SOURCE_ICONS[item.source_type as keyof typeof SOURCE_ICONS] || Globe;
-  const styleConf = CATEGORY_STYLES[item.category.toLowerCase() as keyof typeof CATEGORY_STYLES] || CATEGORY_STYLES.general;
-  
-  const blurDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+  const Icon = getSourceIcon(item.source_type);
+  const styleConf = getCategoryStyle(item.category);
+  const fallbackImage = getFallbackImage(item.category);
+
+  const [imgSrc, setImgSrc] = useState(item.image_url || fallbackImage);
+  const [imgError, setImgError] = useState(false);
+
+  const handleImageError = () => {
+    if (!imgError) {
+      setImgError(true);
+      setImgSrc(fallbackImage);
+    }
+  };
 
   return (
     <motion.div
@@ -55,6 +44,12 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
         {/* Badges Overlay */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-20 pointer-events-none">
           <div className="flex flex-col gap-2">
+            {/* Category Badge */}
+            <div className={`px-2.5 py-1 rounded-full backdrop-blur-md border ${styleConf.bg} ${styleConf.border}`}>
+              <span className={`font-outfit text-[10px] font-extrabold uppercase tracking-widest ${styleConf.text}`}>
+                {item.category}
+              </span>
+            </div>
             {item.is_drop_alert && (
               <div className="flex items-center gap-1.5 bg-white/90 dark:bg-black/60 backdrop-blur-md border border-[var(--color-accent-figures)]/50 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.3)]">
                 <span className="w-2 h-2 rounded-full bg-[var(--color-accent-figures)] animate-live-blink" />
@@ -76,19 +71,19 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
 
         {/* Image Container with Dynamic Gradient Overlay */}
         <div className="relative w-full aspect-[4/3] bg-[var(--color-vault-bg-alt)] overflow-hidden">
-          {/* Always show an image — real one or category fallback */}
           <Image
-            src={item.image_url || CATEGORY_FALLBACK_IMAGES[item.category.toLowerCase()] || '/fallback_general.png'}
+            src={imgSrc}
             alt={item.title}
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             placeholder="blur"
-            blurDataURL={item.thumbnail_url || blurDataURL}
-            unoptimized={!!item.image_url && (item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com'))}
+            blurDataURL={item.thumbnail_url || BLUR_DATA_URL}
+            unoptimized={!!item.image_url}
+            onError={handleImageError}
           />
           {/* If no real image, show a category gradient + label overlay */}
-          {!item.image_url && (
+          {(!item.image_url || imgError) && (
             <div className={`absolute inset-0 bg-gradient-to-t ${styleConf.gradient} opacity-60`} />
           )}
           {/* Standard bottom gradient to make title pop */}

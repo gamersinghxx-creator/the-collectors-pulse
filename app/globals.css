@@ -33,27 +33,82 @@
 
 @layer base {
   :root {
-    --vault-bg: #f8fafc;
-    --vault-bg-alt: #f1f5f9;
-    --vault-card: rgba(255, 255, 255, 0.6);
-    --vault-border: rgba(0, 0, 0, 0.05);
-    --vault-border-hover: rgba(0, 0, 0, 0.1);
+    --vault-bg: #f8f9fb;
+    --vault-bg-alt: #eef1f5;
+    --vault-card: rgba(255, 255, 255, 0.75);
+    --vault-border: rgba(0, 0, 0, 0.08);
+    --vault-border-hover: rgba(0, 0, 0, 0.16);
   }
   .dark {
-    --vault-bg: #0b0c10;
-    --vault-bg-alt: #12141a;
+    --vault-bg: #0a0b0f;
+    --vault-bg-alt: #111318;
     --vault-card: rgba(255, 255, 255, 0.03);
-    --vault-border: rgba(255, 255, 255, 0.05);
+    --vault-border: rgba(255, 255, 255, 0.06);
     --vault-border-hover: rgba(255, 255, 255, 0.15);
   }
 }
 
+/* ─── Base Styles ────────────────────────────────────────────────────────── */
+
 body {
   background-color: var(--color-vault-bg);
-  color: #111827; /* default light mode text */
+  color: #1f2937;
   transition: background-color 0.3s ease, color 0.3s ease;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .dark body {
-  color: #ededed;
+  color: #e5e7eb;
+}
+
+/* ─── Scrollbar Utilities ────────────────────────────────────────────────── */
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom thin scrollbar for content areas */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+
+::selection {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: inherit;
+}
+.dark ::selection {
+  background-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────────────────── */
+
+*:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

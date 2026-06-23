@@ -1,56 +1,51 @@
 import { notFound } from 'next/navigation';
 
 // Force dynamic rendering - never pre-render at build time
-// This page needs live Supabase data and env vars at runtime
 export const dynamic = 'force-dynamic';
-export const revalidate = 300;
 import Image from 'next/image';
 import Link from 'next/link';
 import { supabase } from '../../../lib/supabase/client';
-import { ArrowLeft, ExternalLink, Globe, Hash, MessageCircle, MessageSquare, Rss, Flame } from 'lucide-react';
+import { mockItems } from '../../../lib/mockData';
+import { getCategoryStyle, getFallbackImage, getSourceIcon, BLUR_DATA_URL } from '../../../lib/constants';
+import { ArrowLeft, ExternalLink, Flame } from 'lucide-react';
 import { format } from 'date-fns';
-
-const CATEGORY_STYLES = {
-  tcg: { hex: '#3b82f6', className: 'text-[var(--color-accent-tcg)]' },
-  figures: { hex: '#ef4444', className: 'text-[var(--color-accent-figures)]' },
-  watches: { hex: '#f59e0b', className: 'text-[var(--color-accent-watches)]' },
-  general: { hex: '#9ca3af', className: 'text-gray-400' },
-} as const;
-
-const SOURCE_ICONS = {
-  twitter: Hash,
-  reddit: MessageSquare,
-  rss: Rss,
-  scrape: Globe,
-  facebook: MessageCircle,
-};
-
-const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
-  tcg: '/fallback_tcg.png',
-  figures: '/fallback_figures.png',
-  watches: '/fallback_watches.png',
-  general: '/fallback_general.png',
-};
+import { NewsItem } from '../../../types';
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const { slug } = resolvedParams;
 
-  const { data, error } = await supabase
-    .from('news_items')
-    .select('*')
-    .eq('slug', slug)
-    .single();
+  let item: NewsItem | null = null;
 
-  if (error || !data) {
+  // Try Supabase first
+  try {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const { data, error } = await supabase
+        .from('news_items')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (!error && data) {
+        item = data as NewsItem;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch article from Supabase:", err);
+  }
+
+  // Fallback to mock data
+  if (!item) {
+    item = mockItems.find(i => i.slug === slug) || null;
+  }
+
+  if (!item) {
     notFound();
   }
 
-  const item = data;
-  const Icon = SOURCE_ICONS[item.source_type as keyof typeof SOURCE_ICONS] || Globe;
-  const styleConf = CATEGORY_STYLES[item.category.toLowerCase() as keyof typeof CATEGORY_STYLES] || CATEGORY_STYLES.general;
-  
-  const blurDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+  const Icon = getSourceIcon(item.source_type);
+  const styleConf = getCategoryStyle(item.category);
+  const fallbackImage = getFallbackImage(item.category);
 
   return (
     <main className="min-h-screen bg-[var(--color-vault-bg)] text-gray-900 dark:text-gray-200 transition-colors pb-20">
@@ -73,14 +68,14 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Hero Section */}
         <div className="relative w-full aspect-[21/9] md:aspect-[2.5/1] bg-[var(--color-vault-bg-alt)] rounded-3xl overflow-hidden mb-10 shadow-2xl border border-[var(--color-vault-border)]">
           <Image
-              src={item.image_url || CATEGORY_FALLBACK_IMAGES[item.category?.toLowerCase()] || '/fallback_general.png'}
+              src={item.image_url || fallbackImage}
               alt={item.title}
               fill
               sizes="(max-width: 1200px) 100vw, 1200px"
               className="object-cover"
               placeholder="blur"
-              blurDataURL={item.thumbnail_url || blurDataURL}
-              unoptimized={!!item.image_url && (item.image_url.includes('redd.it') || item.image_url.includes('redditmedia.com'))}
+              blurDataURL={item.thumbnail_url || BLUR_DATA_URL}
+              unoptimized={!!item.image_url}
               priority
             />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-vault-bg)] via-transparent to-transparent opacity-60" />
@@ -89,21 +84,21 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         {/* Header Content */}
         <header className="mb-12">
           <div className="flex flex-wrap items-center gap-3 mb-6">
-             <span className={`font-outfit text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-[var(--color-vault-card)] border border-[var(--color-vault-border)] ${styleConf.className}`}>
+             <span className={`font-outfit text-xs font-extrabold uppercase tracking-widest px-3 py-1.5 rounded-full ${styleConf.bg} ${styleConf.border} border ${styleConf.text}`}>
                {item.category}
              </span>
              {item.is_drop_alert && (
-               <div className="flex items-center gap-1.5 bg-red-500/10 dark:bg-red-500/20 border border-red-500/50 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+               <div className="flex items-center gap-1.5 bg-red-500/10 dark:bg-red-500/20 border border-red-500/50 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(239,68,68,0.2)]">
                  <span className="w-2 h-2 rounded-full bg-red-500 animate-live-blink" />
                  <span className="font-outfit text-xs font-extrabold text-red-600 dark:text-red-400 tracking-wider">LIVE DROP</span>
                </div>
              )}
              {item.is_restock && (
-               <div className="bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/50 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+               <div className="bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/50 px-3 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                  <span className="font-outfit text-xs font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider">RESTOCK</span>
                </div>
              )}
-             <div className="flex items-center gap-1.5 bg-[var(--color-vault-card)] backdrop-blur-md px-3 py-1 rounded-full border border-[var(--color-vault-border)]">
+             <div className="flex items-center gap-1.5 bg-[var(--color-vault-card)] backdrop-blur-md px-3 py-1.5 rounded-full border border-[var(--color-vault-border)]">
                 <span className="font-outfit text-sm font-extrabold text-gray-900 dark:text-white">{item.hype_score}/10</span>
                 <Flame className={`w-4 h-4 ${item.hype_score >= 8 ? 'text-red-500 animate-pulse' : 'text-amber-500'}`} />
              </div>
@@ -128,8 +123,10 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             item.summary_full.split('\n').map((paragraph: string, idx: number) => (
               paragraph.trim() ? <p key={idx} className="leading-relaxed text-gray-700 dark:text-gray-300 text-lg md:text-xl mb-6">{paragraph}</p> : null
             ))
-          ) : (
+          ) : item.summary_short ? (
             <p className="leading-relaxed text-gray-700 dark:text-gray-300 text-lg md:text-xl mb-6">{item.summary_short}</p>
+          ) : (
+            <p className="leading-relaxed text-gray-500 dark:text-gray-400 text-lg italic">No detailed summary available for this article yet.</p>
           )}
         </div>
 
