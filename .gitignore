@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cached/generated article images (runtime content)
+/public/images/articles/*
+!/public/images/articles/.gitkeep
+/public/generated/*
+!/public/generated/.gitkeep

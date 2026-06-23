@@ -1,4 +1,5 @@
 import { NewsItem } from '../types';
+import { resolveArticleImage } from './resolveArticleImage';
 
 const FEEDS = [
   { 
@@ -100,15 +101,8 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
             hype = 10;
           }
 
-          // Category specific fallback images
-          let imageUrl = '';
-          if (feed.category === 'TCG') {
-            imageUrl = 'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=600&q=80';
-          } else if (feed.category === 'Figures') {
-            imageUrl = 'https://images.unsplash.com/photo-1608216315259-7157ccf72671?auto=format&fit=crop&w=600&q=80';
-          } else if (feed.category === 'Watches') {
-            imageUrl = 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&w=600&q=80';
-          }
+          // Image URL will be resolved after parsing via the image pipeline
+          const imageUrl = '';
 
           const publishedDate = rawDate ? new Date(rawDate) : new Date();
           const ageMs = Date.now() - publishedDate.getTime();
@@ -157,6 +151,20 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
     const uniqueItems = allItems.filter((item, index, self) =>
       self.findIndex(t => t.id === item.id) === index
     );
+
+    // Resolve images in parallel for all items via the OG → AI → fallback pipeline
+    console.log(`[LiveFetcher] Resolving images for ${uniqueItems.length} articles...`);
+    const imageResults = await Promise.allSettled(
+      uniqueItems.map(item =>
+        resolveArticleImage(item.source_url, item.title, item.category, item.slug)
+      )
+    );
+
+    imageResults.forEach((result, idx) => {
+      if (result.status === 'fulfilled' && result.value) {
+        uniqueItems[idx].image_url = result.value;
+      }
+    });
 
     // Sort items newest first
     return uniqueItems.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());

@@ -188,7 +188,7 @@ export default function FeaturedSpotlight({ item }: FeaturedSpotlightProps) {
                     className="object-cover transition-transform duration-700 ease-out group-hover/frame:scale-110"
                     placeholder="blur"
                     blurDataURL={BLUR_DATA_URL}
-                    unoptimized={!!item.image_url}
+                    unoptimized={!!item.image_url && !item.image_url.startsWith('/')}
                     onError={handleImageError}
                   />
 

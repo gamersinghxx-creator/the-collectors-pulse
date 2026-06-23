@@ -86,7 +86,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               className="object-cover"
               placeholder="blur"
               blurDataURL={item.thumbnail_url || BLUR_DATA_URL}
-              unoptimized={!!item.image_url}
+              unoptimized={!!item.image_url && !item.image_url.startsWith('/')}
               priority
             />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-vault-bg)] via-transparent to-transparent opacity-60" />

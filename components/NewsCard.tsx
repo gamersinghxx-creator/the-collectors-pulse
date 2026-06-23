@@ -78,7 +78,7 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
             className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
             placeholder="blur"
             blurDataURL={item.thumbnail_url || BLUR_DATA_URL}
-            unoptimized={!!item.image_url}
+            unoptimized={!!item.image_url && !item.image_url.startsWith('/')}
             onError={handleImageError}
           />
           {/* If no real image, show a category gradient + label overlay */}
