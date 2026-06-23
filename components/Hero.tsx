@@ -2,7 +2,8 @@
 
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { Shield, Sparkles, TrendingUp } from 'lucide-react';
+import Image from 'next/image';
+import { Sparkles, TrendingUp } from 'lucide-react';
 
 export default function Hero() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -16,20 +17,21 @@ export default function Hero() {
   const springY = useSpring(mouseY, { stiffness: 60, damping: 20 });
 
   // Transforms for background grid shift
-  const bgShiftX = useTransform(springX, [-0.5, 0.5], ['-15px', '15px']);
-  const bgShiftY = useTransform(springY, [-0.5, 0.5], ['-15px', '15px']);
+  const bgShiftX = useTransform(springX, [-0.5, 0.5], ['-20px', '20px']);
+  const bgShiftY = useTransform(springY, [-0.5, 0.5], ['-20px', '20px']);
 
-  // Floating elements tilt / transform
-  const cardX = useTransform(springX, [-0.5, 0.5], [-30, 30]);
-  const cardY = useTransform(springY, [-0.5, 0.5], [-30, 30]);
-  const cardRotate = useTransform(springX, [-0.5, 0.5], [-12, 12]);
+  // Parallax shifts for characters
+  const pikachuX = useTransform(springX, [-0.5, 0.5], [-50, 50]);
+  const pikachuY = useTransform(springY, [-0.5, 0.5], [-50, 50]);
+  const pikachuRotate = useTransform(springX, [-0.5, 0.5], [-15, 15]);
 
-  const figureX = useTransform(springX, [-0.5, 0.5], [40, -40]);
-  const figureY = useTransform(springY, [-0.5, 0.5], [-20, 20]);
-  const figureRotate = useTransform(springY, [-0.5, 0.5], [10, -10]);
+  const luffyX = useTransform(springX, [-0.5, 0.5], [60, -60]);
+  const luffyY = useTransform(springY, [-0.5, 0.5], [-40, 40]);
+  const luffyRotate = useTransform(springY, [-0.5, 0.5], [12, -12]);
 
-  const watchX = useTransform(springX, [-0.5, 0.5], [-20, 20]);
-  const watchY = useTransform(springY, [-0.5, 0.5], [40, -40]);
+  const gokuX = useTransform(springX, [-0.5, 0.5], [-30, 30]);
+  const gokuY = useTransform(springY, [-0.5, 0.5], [60, -60]);
+  const gokuRotate = useTransform(springX, [-0.5, 0.5], [-8, 8]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -62,7 +64,7 @@ export default function Hero() {
   return (
     <div
       ref={heroRef}
-      className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-slate-950 dark:bg-black py-20 px-4"
+      className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-slate-950 dark:bg-black py-24 px-4"
     >
       {/* Background Interactive grid */}
       <motion.div 
@@ -70,10 +72,10 @@ export default function Hero() {
         className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none"
       />
 
-      {/* Spotlights and Ambient Orbs */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-blue-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-red-500/5 blur-[120px] pointer-events-none" />
+      {/* Dynamic spotlights and Auras matching floating characters */}
+      <div className="absolute top-[35%] left-[15%] w-80 h-80 rounded-full bg-yellow-500/10 blur-[100px] pointer-events-none" />
+      <div className="absolute top-[25%] right-[15%] w-80 h-80 rounded-full bg-purple-500/10 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[30%] w-80 h-80 rounded-full bg-amber-500/10 blur-[100px] pointer-events-none" />
 
       {/* Radial Spotlight Center Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.02)_0%,transparent_80%)] pointer-events-none" />
@@ -86,11 +88,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6"
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md mb-6"
         >
           <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span className="font-outfit text-xs font-bold tracking-[0.2em] text-gray-300 uppercase">
-            The Ultimate Collector Portal
+          <span className="font-outfit text-xs font-black tracking-[0.25em] text-amber-400 uppercase">
+            3D COLLECTIBLE REALM
           </span>
         </motion.div>
 
@@ -104,7 +106,7 @@ export default function Hero() {
           COLLECTOR&apos;S UNIVERSE
         </motion.h1>
 
-        {/* Subheadlines / Buzzwords */}
+        {/* Subheadlines */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -141,56 +143,66 @@ export default function Hero() {
         </motion.div>
       </div>
 
-      {/* Floating Parallax Collectible Artworks */}
+      {/* Floating 3D Toy Characters with mouse parallax */}
       
-      {/* 1. TCG Card (Left Side) */}
+      {/* 1. 3D Pikachu Toy (Left side) */}
       <motion.div
-        style={{ x: cardX, y: cardY, rotate: cardRotate }}
-        initial={{ opacity: 0, x: -100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ type: 'spring', stiffness: 50, delay: 0.4 }}
-        className="absolute left-6 md:left-[10%] top-[45%] -translate-y-1/2 w-32 md:w-44 aspect-[3/4] rounded-2xl border border-blue-500/30 bg-blue-900/10 backdrop-blur-md p-3 hidden sm:block pointer-events-none select-none shadow-[0_0_40px_rgba(59,130,246,0.15)] overflow-hidden"
+        style={{ x: pikachuX, y: pikachuY, rotate: pikachuRotate }}
+        initial={{ opacity: 0, scale: 0.5, x: -150 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 40, damping: 15, delay: 0.4 }}
+        className="absolute left-[6%] top-[38%] w-36 md:w-56 aspect-square hidden sm:block pointer-events-none select-none filter drop-shadow-[0_10px_30px_rgba(234,179,8,0.35)]"
       >
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/20 via-purple-500/10 to-transparent" />
-        <div className="w-full h-2/3 rounded-lg bg-blue-950/80 border border-blue-500/20 mb-3 flex items-center justify-center">
-          <Shield className="w-8 h-8 text-blue-400" />
-        </div>
-        <div className="h-2 w-16 bg-blue-500/40 rounded-full mb-1.5" />
-        <div className="h-1.5 w-10 bg-blue-500/20 rounded-full" />
+        <Image
+          src="/3d_pikachu_toy.png"
+          alt="3D Pikachu Toy Figure"
+          width={240}
+          height={240}
+          className="object-contain"
+          priority
+        />
+        {/* Under character platform shadows */}
+        <div className="w-2/3 h-3 bg-black/40 rounded-full blur-md mx-auto mt-[-10px] opacity-60 animate-pulse" />
       </motion.div>
 
-      {/* 2. Figure Grid (Right Side, lower) */}
+      {/* 2. 3D Luffy Gear 5 Toy (Right side) */}
       <motion.div
-        style={{ x: figureX, y: figureY, rotate: figureRotate }}
-        initial={{ opacity: 0, x: 100 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ type: 'spring', stiffness: 50, delay: 0.5 }}
-        className="absolute right-6 md:right-[10%] top-[35%] -translate-y-1/2 w-28 md:w-36 aspect-square rounded-2xl border border-red-500/30 bg-red-900/10 backdrop-blur-md p-4 hidden sm:block pointer-events-none select-none shadow-[0_0_40px_rgba(239,68,68,0.15)] flex flex-col justify-between"
+        style={{ x: luffyX, y: luffyY, rotate: luffyRotate }}
+        initial={{ opacity: 0, scale: 0.5, x: 150 }}
+        animate={{ opacity: 1, scale: 1, x: 0 }}
+        transition={{ type: 'spring', stiffness: 40, damping: 15, delay: 0.5 }}
+        className="absolute right-[6%] top-[28%] w-36 md:w-56 aspect-square hidden sm:block pointer-events-none select-none filter drop-shadow-[0_10px_30px_rgba(168,85,247,0.3)]"
       >
-        <div className="absolute inset-0 bg-gradient-to-bl from-red-500/20 via-amber-500/10 to-transparent" />
-        <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
-          <span className="text-red-400 font-bold">LVL</span>
-        </div>
-        <div>
-          <div className="h-2 w-20 bg-red-500/40 rounded-full mb-1.5" />
-          <div className="h-1.5 w-12 bg-red-500/20 rounded-full" />
-        </div>
+        <Image
+          src="/3d_luffy_toy.png"
+          alt="3D Luffy Gear 5 Toy Figure"
+          width={240}
+          height={240}
+          className="object-contain"
+          priority
+        />
+        <div className="w-2/3 h-3 bg-black/40 rounded-full blur-md mx-auto mt-[-10px] opacity-60 animate-pulse" />
       </motion.div>
 
-      {/* 3. Luxury Watch Silhouette (Bottom Left) */}
+      {/* 3. 3D Goku Super Saiyan Toy (Bottom Right) */}
       <motion.div
-        style={{ x: watchX, y: watchY }}
-        initial={{ opacity: 0, y: 100 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 50, delay: 0.6 }}
-        className="absolute left-[15%] bottom-[12%] w-24 md:w-32 aspect-square rounded-full border border-amber-500/30 bg-amber-900/10 backdrop-blur-md p-3 hidden md:flex items-center justify-center pointer-events-none select-none shadow-[0_0_40px_rgba(245,158,11,0.15)]"
+        style={{ x: gokuX, y: gokuY, rotate: gokuRotate }}
+        initial={{ opacity: 0, scale: 0.5, y: 150 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 40, damping: 15, delay: 0.6 }}
+        className="absolute right-[22%] bottom-[12%] w-32 md:w-48 aspect-square hidden md:block pointer-events-none select-none filter drop-shadow-[0_10px_30px_rgba(245,158,11,0.35)]"
       >
-        <div className="w-full h-full rounded-full border-2 border-dashed border-amber-500/20 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full border border-amber-500/40 flex items-center justify-center">
-            <span className="text-amber-400 text-xs">XI</span>
-          </div>
-        </div>
+        <Image
+          src="/3d_goku_toy.png"
+          alt="3D Goku Toy Figure"
+          width={200}
+          height={200}
+          className="object-contain"
+          priority
+        />
+        <div className="w-2/3 h-3 bg-black/40 rounded-full blur-md mx-auto mt-[-10px] opacity-60 animate-pulse" />
       </motion.div>
+      
     </div>
   );
 }

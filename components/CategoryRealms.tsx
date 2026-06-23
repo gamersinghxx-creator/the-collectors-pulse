@@ -3,7 +3,8 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Shield, Eye, Flame, Box, Compass } from 'lucide-react';
+import { Shield, Eye, Flame, Box, Compass, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 interface RealmCardProps {
   title: string;
@@ -15,6 +16,8 @@ interface RealmCardProps {
   gradientClass: string;
   glowColor: string;
   icon: React.ReactNode;
+  characterSnippet?: string;
+  miniBgImage?: string;
 }
 
 function RealmCard({
@@ -27,15 +30,17 @@ function RealmCard({
   gradientClass,
   glowColor,
   icon,
+  characterSnippet,
+  miniBgImage,
 }: RealmCardProps) {
   return (
     <motion.div
       whileHover={{ y: -10, scale: 1.02 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       style={{ '--glow-color': glowColor } as React.CSSProperties}
-      className={`relative flex flex-col justify-between p-8 rounded-3xl border transition-all duration-300 overflow-hidden cursor-pointer min-h-[280px] group ${
+      className={`relative flex flex-col justify-between p-8 rounded-3xl border transition-all duration-300 overflow-hidden cursor-pointer min-h-[300px] group ${
         active
-          ? 'bg-slate-900/90 border-[color:var(--glow-color)] shadow-[0_0_30px_var(--glow-color)]/20'
+          ? 'bg-slate-900/90 border-[color:var(--glow-color)] shadow-[0_0_35px_var(--glow-color)]/25'
           : 'bg-slate-950/40 border-white/5 hover:border-white/10 hover:shadow-[0_0_30px_rgba(255,255,255,0.02)]'
       }`}
     >
@@ -43,6 +48,19 @@ function RealmCard({
       <div
         className={`absolute inset-0 bg-gradient-to-br ${gradientClass} opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`}
       />
+
+      {/* Decorative Character Silhouette background */}
+      {miniBgImage && (
+        <div className="absolute right-[-20px] bottom-[-20px] w-36 h-36 opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-110 transition-all duration-500 pointer-events-none">
+          <Image
+            src={miniBgImage}
+            alt="Character silhouette overlay"
+            width={150}
+            height={150}
+            className="object-contain"
+          />
+        </div>
+      )}
 
       {/* Decorative Particle Mesh Overlay */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,transparent_20%,black_80%)] opacity-60 pointer-events-none" />
@@ -67,6 +85,15 @@ function RealmCard({
         <h3 className="font-outfit text-2xl font-black text-white mt-1 leading-tight tracking-tight">
           {title}
         </h3>
+        
+        {/* Character Highlight Snippet */}
+        {characterSnippet && (
+          <div className="flex items-center gap-1.5 mt-2 text-[10px] font-bold font-mono text-amber-400 uppercase">
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            {characterSnippet}
+          </div>
+        )}
+
         <p className="font-inter text-sm text-gray-400 mt-3 leading-relaxed">
           {description}
         </p>
@@ -96,6 +123,7 @@ export default function CategoryRealms() {
       gradientClass: 'from-purple-600/30 via-transparent to-transparent',
       glowColor: '#c084fc',
       icon: <Compass className="w-6 h-6" />,
+      characterSnippet: 'PIKACHU • GOKU • LUFFY ACTIVE',
     },
     {
       title: 'TCG REALM',
@@ -107,6 +135,8 @@ export default function CategoryRealms() {
       gradientClass: 'from-blue-600/30 via-transparent to-transparent',
       glowColor: '#3b82f6',
       icon: <Shield className="w-6 h-6" />,
+      characterSnippet: '3D Pikachu Card Radar Live',
+      miniBgImage: '/3d_pikachu_toy.png',
     },
     {
       title: 'FIGURE VAULT',
@@ -118,6 +148,8 @@ export default function CategoryRealms() {
       gradientClass: 'from-red-600/30 via-transparent to-transparent',
       glowColor: '#ef4444',
       icon: <Box className="w-6 h-6" />,
+      characterSnippet: 'Luffy Gear 5 & Goku SSJ Vault',
+      miniBgImage: '/3d_luffy_toy.png',
     },
     {
       title: 'WATCH OBSERVATORY',
@@ -129,6 +161,8 @@ export default function CategoryRealms() {
       gradientClass: 'from-amber-600/30 via-transparent to-transparent',
       glowColor: '#f59e0b',
       icon: <Flame className="w-6 h-6" />,
+      characterSnippet: 'Luxury Restock Radar Live',
+      miniBgImage: '/3d_goku_toy.png', // Goku theme aura matches watch amber tones
     },
   ];
 
