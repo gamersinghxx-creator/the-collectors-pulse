@@ -75,7 +75,7 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
           const rawDesc = descMatch ? descMatch[1] : '';
 
           let fullTitle = cleanXMLText(rawTitle);
-          let sourceUrl = cleanXMLText(rawLink);
+          const sourceUrl = cleanXMLText(rawLink);
           
           // Google News title format is: "Title of article - Publisher Name"
           // We can split this to extract title and source name cleanly

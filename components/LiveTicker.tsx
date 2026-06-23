@@ -42,7 +42,6 @@ export default function LiveTicker({ items }: LiveTickerProps) {
           {duplicatedItems.map((item, idx) => {
             const isAlert = item.is_drop_alert || item.is_restock;
             const isTCG = item.category.toLowerCase() === 'tcg';
-            const isWatch = item.category.toLowerCase() === 'watches';
             
             return (
               <div key={`${item.id}-${idx}`} className="flex items-center gap-4 px-10 h-full border-r border-white/5">

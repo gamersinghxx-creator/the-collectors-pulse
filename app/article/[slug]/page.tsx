@@ -1,3 +1,4 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
 
 // Force dynamic rendering - never pre-render at build time
@@ -54,7 +55,6 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
     notFound();
   }
 
-  const Icon = getSourceIcon(item.source_type);
   const styleConf = getCategoryStyle(item.category);
   const fallbackImage = getFallbackImage(item.category);
 
@@ -69,7 +69,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
           </Link>
           <div className="flex items-center gap-2">
              <div className="w-8 h-8 rounded-full bg-[var(--color-vault-bg)] border border-[var(--color-vault-border)] flex items-center justify-center">
-                <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                {React.createElement(getSourceIcon(item.source_type), { className: "w-4 h-4 text-gray-600 dark:text-gray-400" })}
               </div>
           </div>
         </div>

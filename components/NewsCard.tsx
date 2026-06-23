@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,7 +16,6 @@ interface NewsCardProps {
 }
 
 export default function NewsCard({ item, index, className = '' }: NewsCardProps) {
-  const Icon = getSourceIcon(item.source_type);
   const styleConf = getCategoryStyle(item.category);
   const fallbackImage = getFallbackImage(item.category);
 
@@ -103,7 +102,7 @@ export default function NewsCard({ item, index, className = '' }: NewsCardProps)
           <div className="flex items-center justify-between mt-auto pt-4 border-t border-[var(--color-vault-border)]">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full bg-white/50 dark:bg-black/50 backdrop-blur-md border border-[var(--color-vault-border)] flex items-center justify-center group-hover:bg-gray-100 dark:group-hover:bg-gray-800 transition-colors">
-                <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                {React.createElement(getSourceIcon(item.source_type), { className: "w-4 h-4 text-gray-600 dark:text-gray-400" })}
               </div>
               <span className="font-inter font-medium text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]">
                 {item.source_name}

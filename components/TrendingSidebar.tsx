@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, TrendingUp, Zap, HelpCircle } from 'lucide-react';
+import { Flame, TrendingUp } from 'lucide-react';
 import { NewsItem } from '../types';
 import { getCategoryStyle } from '../lib/constants';
 import Link from 'next/link';
@@ -12,12 +11,6 @@ interface TrendingSidebarProps {
 }
 
 export default function TrendingSidebar({ initialTrending }: TrendingSidebarProps) {
-  const [trending, setTrending] = useState(initialTrending);
-
-  useEffect(() => {
-    setTrending(initialTrending);
-  }, [initialTrending]);
-
   return (
     <div id="trending-section" className="bg-slate-950/40 backdrop-blur-xl border border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
       
@@ -42,9 +35,8 @@ export default function TrendingSidebar({ initialTrending }: TrendingSidebarProp
       {/* List */}
       <div className="flex flex-col gap-6">
         <AnimatePresence>
-          {trending.map((item, index) => {
+          {initialTrending.map((item, index) => {
             const style = getCategoryStyle(item.category);
-            const isTop3 = index < 3;
             const rankGlow = index === 0 
               ? 'text-amber-400 font-black' 
               : index === 1 

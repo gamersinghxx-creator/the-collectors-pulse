@@ -47,6 +47,6 @@ export default function AdSlot({ slotId, className = '', adFormat = 'auto' }: Ad
 
 declare global {
   interface Window {
-    adsbygoogle: any[];
+    adsbygoogle: unknown[];
   }
 }

@@ -26,5 +26,5 @@ export interface NewsItem {
   scraped_at: string;
   created_at: string;
   processing_status: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }

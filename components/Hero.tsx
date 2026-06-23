@@ -3,7 +3,7 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, TrendingUp, Radio, Calendar, FileText, Database } from 'lucide-react';
+import { Sparkles, TrendingUp, Radio, Calendar, FileText } from 'lucide-react';
 
 export default function Hero() {
   const heroRef = useRef<HTMLDivElement>(null);
