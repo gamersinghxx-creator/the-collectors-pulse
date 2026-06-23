@@ -110,6 +110,14 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
             imageUrl = 'https://images.unsplash.com/photo-1547996160-81dfa63595aa?auto=format&fit=crop&w=600&q=80';
           }
 
+          const publishedDate = rawDate ? new Date(rawDate) : new Date();
+          const ageMs = Date.now() - publishedDate.getTime();
+          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+          
+          if (ageMs > THIRTY_DAYS_MS) {
+            return null;
+          }
+
           return {
             id,
             title: fullTitle,
@@ -128,12 +136,12 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
             is_restock: textToScore.includes('restock') || textToScore.includes('back in stock') || textToScore.includes('re-release'),
             is_trending: hype >= 8,
             tags: [feed.category.toLowerCase(), sourceName.toLowerCase().replace(/\s+/g, '')],
-            published_at: rawDate ? new Date(rawDate).toISOString() : new Date().toISOString(),
+            published_at: publishedDate.toISOString(),
             scraped_at: new Date().toISOString(),
             created_at: new Date().toISOString(),
             processing_status: 'published'
           } as NewsItem;
-        });
+        }).filter((item): item is NewsItem => item !== null);
       } catch (err) {
         console.error(`[LiveFetcher] Exception parsing feed for ${feed.category}:`, err);
         return [];
