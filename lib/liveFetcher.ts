@@ -28,12 +28,13 @@ const FETCH_OPTIONS = {
 function cleanXMLText(text: string): string {
   return text
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1') // Strip CDATA tags
-    .replace(/<[^>]*>/g, '') // Strip HTML tags
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<[^>]*>/g, '') // Strip HTML tags after decoding
     .replace(/\s+/g, ' ')
     .trim();
 }
