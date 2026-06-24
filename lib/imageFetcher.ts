@@ -84,6 +84,111 @@ async function resolveRedirectUrl(url: string): Promise<string> {
  * Extract og:image or twitter:image from a web page's <head>.
  * Returns the image URL string or null.
  */
+/**
+ * Decodes a Google News redirect URL to the actual destination URL using the batchexecute API.
+ */
+export async function decodeGoogleNewsUrl(sourceUrl: string): Promise<string | null> {
+  try {
+    const url = new URL(sourceUrl);
+    const pathParts = url.pathname.split('/');
+    const base64Str = pathParts[pathParts.length - 1];
+    if (!base64Str) {
+      console.log('[ImageFetcher] Invalid Google News URL path parts:', sourceUrl);
+      return null;
+    }
+
+    // 1. Fetch the articles redirect page to get signature and timestamp
+    const targetUrl = `https://news.google.com/articles/${base64Str}`;
+    const pageRes = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+    if (!pageRes.ok) {
+      console.log(`[ImageFetcher] Failed to fetch article page ${targetUrl}: Status ${pageRes.status}`);
+      return null;
+    }
+    const html = await pageRes.text();
+    
+    // Extract signature and timestamp via regex
+    const sgMatch = html.match(/data-n-a-sg=["']([^"']+)["']/);
+    const tsMatch = html.match(/data-n-a-ts=["']([^"']+)["']/);
+    
+    if (!sgMatch || !tsMatch) {
+      console.log('[ImageFetcher] Failed to extract signature/timestamp from Google News page');
+      return null;
+    }
+    
+    const signature = sgMatch[1];
+    const timestamp = tsMatch[1];
+
+    // 2. Post to batchexecute
+    const batchUrl = 'https://news.google.com/_/DotsSplashUi/data/batchexecute';
+    const payload = [
+      'Fbv4je',
+      JSON.stringify([
+        'garturlreq',
+        [
+          ['X', 'X', ['X', 'X'], null, null, 1, 1, 'US:en', null, 1, null, null, null, null, null, 0, 1],
+          'X',
+          'X',
+          1,
+          [1, 1, 1],
+          1,
+          1,
+          null,
+          0,
+          0,
+          null,
+          0
+        ],
+        base64Str,
+        Number(timestamp),
+        signature
+      ])
+    ];
+    
+    const fReq = JSON.stringify([[payload]]);
+    const bodyStr = 'f.req=' + encodeURIComponent(fReq);
+    
+    const batchRes = await fetch(batchUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'
+      },
+      body: bodyStr
+    });
+    
+    if (!batchRes.ok) {
+      console.log(`[ImageFetcher] BatchExecute call failed: Status ${batchRes.status}`);
+      return null;
+    }
+    
+    const resText = await batchRes.text();
+    const parts = resText.split('\n\n');
+    if (parts.length < 2) {
+      console.log('[ImageFetcher] Invalid response format from batchexecute');
+      return null;
+    }
+    
+    const parsedData = JSON.parse(parts[1]);
+    const innerDataStr = parsedData[0][2];
+    const innerData = JSON.parse(innerDataStr);
+    const decodedUrl = innerData[1];
+    
+    console.log(`[ImageFetcher] Decoded Google News redirect URL to: ${decodedUrl}`);
+    return decodedUrl;
+  } catch (err) {
+    console.log('[ImageFetcher] Error decoding Google News URL:', (err as Error).message);
+    return null;
+  }
+}
+
+/**
+ * Extract og:image, twitter:image, or high-quality content image from a webpage.
+ * Returns the image URL string or null.
+ */
 async function extractOGImage(sourceUrl: string): Promise<string | null> {
   try {
     // First, resolve any redirects (especially Google News URLs)
@@ -108,28 +213,25 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
       return null;
     }
 
-    // Read only first 50KB to find meta tags (don't download entire page)
+    // Read up to 300KB to find metadata and high-quality body images
     const reader = res.body?.getReader();
     if (!reader) return null;
 
     let html = '';
     const decoder = new TextDecoder();
     let bytesRead = 0;
-    const MAX_BYTES = 50 * 1024; // 50KB should be enough for <head>
+    const MAX_BYTES = 300 * 1024; // 300KB is enough for metadata and top page images
 
     while (bytesRead < MAX_BYTES) {
       const { done, value } = await reader.read();
       if (done) break;
       html += decoder.decode(value, { stream: true });
       bytesRead += value.length;
-
-      // If we've passed the </head> tag, stop reading
-      if (html.includes('</head>')) break;
     }
 
     reader.cancel();
 
-    // Extract og:image
+    // 1. Extract og:image
     const ogImageMatch = html.match(
       /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i
     ) || html.match(
@@ -141,7 +243,7 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
       return ogImageMatch[1];
     }
 
-    // Fallback: twitter:image
+    // 2. Fallback: twitter:image
     const twitterImageMatch = html.match(
       /<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i
     ) || html.match(
@@ -153,10 +255,49 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
       return twitterImageMatch[1];
     }
 
-    console.log(`[ImageFetcher] No OG/Twitter image found in ${resolvedUrl.slice(0, 60)}...`);
+    // 3. Fallback: Scrape inline body images
+    const imgMatches = html.match(/<img[^>]+src=["']([^"']+)["']/gi) || [];
+    for (const imgTag of imgMatches) {
+      const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
+      if (srcMatch?.[1]) {
+        const imgUrl = srcMatch[1];
+        const lowercaseImgUrl = imgUrl.toLowerCase();
+        
+        // Skip base64, tracking pixels, logos, avatars, icons, and buttons
+        const isExcluded = [
+          'logo', 'icon', 'avatar', 'spacer', 'pixel', 'ad', 'banner', 'button', 'sprite',
+          'loading', 'spinner', 'placeholder', 'header', 'footer', 'social', 'facebook',
+          'twitter', 'instagram', 'linkedin', 'pinterest', 'youtube', 'github', 'arrow',
+          'chevron', 'check', 'close', 'search', 'menu'
+        ].some(keyword => lowercaseImgUrl.includes(keyword)) ||
+        imgUrl.startsWith('data:');
+
+        if (!isExcluded) {
+          // Resolve relative URLs to absolute URLs
+          let absoluteImgUrl = imgUrl;
+          try {
+            if (imgUrl.startsWith('//')) {
+              absoluteImgUrl = 'https:' + imgUrl;
+            } else if (imgUrl.startsWith('/')) {
+              const parsedBase = new URL(resolvedUrl);
+              absoluteImgUrl = parsedBase.origin + imgUrl;
+            } else if (!imgUrl.startsWith('http://') && !imgUrl.startsWith('https://')) {
+              const parsedBase = new URL(resolvedUrl);
+              absoluteImgUrl = parsedBase.origin + '/' + imgUrl;
+            }
+            console.log(`[ImageFetcher] Scraped high-quality fallback body image: ${absoluteImgUrl}`);
+            return absoluteImgUrl;
+          } catch {
+            // Ignore parse errors for badly formatted URLs
+          }
+        }
+      }
+    }
+
+    console.log(`[ImageFetcher] No usable image found in ${resolvedUrl.slice(0, 60)}...`);
     return null;
   } catch (err) {
-    console.log(`[ImageFetcher] Failed to extract OG image from ${sourceUrl.slice(0, 60)}...: ${(err as Error).message}`);
+    console.log(`[ImageFetcher] Failed to extract image from ${sourceUrl.slice(0, 60)}...: ${(err as Error).message}`);
     return null;
   }
 }
@@ -201,8 +342,8 @@ async function downloadImage(imageUrl: string, slug: string): Promise<string | n
     const buffer = Buffer.from(await res.arrayBuffer());
 
     // Validate minimum size (skip tiny tracking pixels)
-    if (buffer.length < 2000) {
-      console.log(`[ImageFetcher] Image too small (${buffer.length} bytes), likely a tracking pixel`);
+    if (buffer.length < 5000) { // filter out tiny images/icons
+      console.log(`[ImageFetcher] Image too small (${buffer.length} bytes), skipping`);
       return null;
     }
 
@@ -220,7 +361,7 @@ async function downloadImage(imageUrl: string, slug: string): Promise<string | n
 }
 
 /**
- * Main export: Fetch the OG image from a source URL, download it, and return the local path.
+ * Main export: Fetch the OG or scraped image from a source URL, download it, and return the local path.
  * Returns null if the entire pipeline fails.
  */
 export async function fetchArticleImage(sourceUrl: string, slug: string): Promise<string | null> {
@@ -230,19 +371,25 @@ export async function fetchArticleImage(sourceUrl: string, slug: string): Promis
     return cached;
   }
 
-  // 2. Skip Google News redirect URLs — they resolve to Google's own OG image (logo),
-  //    not the actual article image. These URLs require JS/browser to resolve.
+  let targetUrl = sourceUrl;
+
+  // 2. Decode Google News redirect URLs if applicable
   if (sourceUrl.includes('news.google.com')) {
-    console.log(`[ImageFetcher] Skipping Google News redirect URL (requires browser to resolve)`);
-    return null;
+    console.log(`[ImageFetcher] Decoding Google News URL: ${sourceUrl.slice(0, 60)}...`);
+    const decoded = await decodeGoogleNewsUrl(sourceUrl);
+    if (decoded) {
+      targetUrl = decoded;
+    } else {
+      console.log('[ImageFetcher] Could not decode Google News URL, falling back to original redirect');
+    }
   }
 
-  // 3. Extract OG image URL
-  const ogUrl = await extractOGImage(sourceUrl);
-  if (!ogUrl) {
+  // 3. Extract best available image URL (OG, Twitter, or body scraper fallback)
+  const imageUrl = await extractOGImage(targetUrl);
+  if (!imageUrl) {
     return null;
   }
 
   // 4. Download and cache
-  return await downloadImage(ogUrl, slug);
+  return await downloadImage(imageUrl, slug);
 }
