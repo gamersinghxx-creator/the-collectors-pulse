@@ -1,114 +1,400 @@
 @import "tailwindcss";
 
-@theme {
-  --color-vault-bg: var(--vault-bg);
-  --color-vault-bg-alt: var(--vault-bg-alt);
-  --color-vault-card: var(--vault-card);
-  --color-vault-border: var(--vault-border);
-  --color-vault-border-hover: var(--vault-border-hover);
-  --color-accent-tcg: #3b82f6;
-  --color-accent-watches: #f59e0b;
-  --color-accent-figures: #ef4444;
-  --color-accent-restock: #10b981;
-  --font-inter: var(--font-inter);
-  --font-outfit: var(--font-outfit);
+/* ============================================================================
+   THE COLLECTOR'S PULSE — DESIGN SYSTEM v2  "Luxe-but-Vivid"
+   ----------------------------------------------------------------------------
+   A bold, vibrant editorial system with luxury polish.
+   References synthesized:
+     • Audemars Piguet  → cinematic dark stage, generous space, refined serif
+     • One Piece TCG    → dramatic depth, bold red, immersive art framing
+     • Pokémon          → electric, cheerful category color, energetic motion
+     • Bandai Namco     → warm ember gradient glow (red→orange→gold)
+   ========================================================================== */
 
-  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-live-blink: live-blink 1.5s ease-in-out infinite;
-  --animate-ticker-scroll: ticker-scroll 30s linear infinite;
+:root,
+.dark {
+  /* ── Core surfaces (premium dark stage) ─────────────────────────────── */
+  --obsidian:       #07070D;   /* page base */
+  --vault:          #101019;   /* cards / panels */
+  --chamber:        #181826;   /* raised panels */
+  --chamber-2:      #20202F;   /* hover / elevated */
 
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 10px rgba(0,0,0,0); }
-    50% { box-shadow: 0 0 20px var(--glow-color, rgba(255,255,255,0.2)); }
-  }
-  @keyframes live-blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-  @keyframes ticker-scroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
+  /* ── Signature accents ──────────────────────────────────────────────── */
+  --gold:           #D8B65A;
+  --gold-bright:    #F2D679;
+  --crimson:        #E23B2E;   /* electric red (One Piece / Bandai) */
+  --ember:          #F2762E;   /* Bandai orange */
+  --flame:          #F7BE33;   /* Bandai yellow */
+
+  --ivory:          #F6F1E9;
+  --mist:           #9D9DB4;
+  --mist-dim:       #6E6E85;
+  --border-color:   #26263A;
+  --border-bright:  #34344E;
+  --on-accent:      #07070D;            /* text on bright accent fills — always dark */
+  --header-bg:      rgba(7,7,13,0.82);  /* sticky header / nav backdrop */
+
+  /* ── Glows ──────────────────────────────────────────────────────────── */
+  --glow-gold:      rgba(216,182,90,0.14);
+  --glow-crimson:   rgba(226,59,46,0.14);
+  --glow-ember:     rgba(242,118,46,0.16);
+
+  /* ── Spacing scale ──────────────────────────────────────────────────── */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  16px;
+  --space-lg:  24px;
+  --space-xl:  40px;
+  --space-2xl: 64px;
+  --space-3xl: 96px;
+
+  /* ── Radii ──────────────────────────────────────────────────────────── */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   18px;
+  --radius-xl:   28px;
+  --radius-pill: 999px;
+
+  /* ── Category accents (vivid) ───────────────────────────────────────── */
+  --accent-tcg:     #2E8BFF;   /* electric blue (Pokémon) */
+  --accent-figures: #C24BF5;   /* vivid violet/magenta */
+  --accent-watches: #E8C96A;   /* champagne gold (luxury) */
+  --accent-restock: #16D6A0;   /* mint */
+
+  --accent-tcg-soft:     rgba(46,139,255,0.14);
+  --accent-figures-soft: rgba(194,75,245,0.14);
+  --accent-watches-soft: rgba(232,201,106,0.13);
+
+  /* ── Signature gradients ────────────────────────────────────────────── */
+  --grad-ember:   linear-gradient(115deg, #E23B2E 0%, #F2762E 48%, #F7BE33 100%);
+  --grad-gold:    linear-gradient(120deg, #F2D679 0%, #D8B65A 55%, #B8923A 100%);
+  --grad-tcg:     linear-gradient(135deg, #2E8BFF, #1E5BD6);
+  --grad-figures: linear-gradient(135deg, #D946EF, #8B3BF5);
+  --grad-watches: linear-gradient(135deg, #F2D679, #B8923A);
+  --grad-aurora:  radial-gradient(ellipse 55% 45% at 78% 18%, rgba(242,118,46,0.20), transparent 60%),
+                  radial-gradient(ellipse 45% 50% at 12% 70%, rgba(46,139,255,0.16), transparent 60%),
+                  radial-gradient(ellipse 40% 40% at 55% 95%, rgba(194,75,245,0.12), transparent 60%);
+
+  /* ── Compatibility aliases (used across components) ─────────────────── */
+  --vault-bg:            var(--obsidian);
+  --vault-bg-alt:        var(--vault);
+  --vault-card:          var(--vault);
+  --vault-border:        var(--border-color);
+  --vault-border-hover:  var(--gold);
+  --vault-text:          var(--ivory);
+  --vault-text-muted:    var(--mist);
+
+  --color-vault-bg:           var(--obsidian);
+  --color-vault-bg-alt:       var(--vault);
+  --color-vault-card:         var(--vault);
+  --color-vault-border:       var(--border-color);
+  --color-vault-border-hover: var(--gold);
+  --color-vault-text:         var(--ivory);
+  --color-vault-text-muted:   var(--mist);
+  --color-accent-tcg:         var(--accent-tcg);
+  --color-accent-figures:     var(--accent-figures);
+  --color-accent-watches:     var(--accent-watches);
+  --color-accent-restock:     var(--accent-restock);
+
+  /* ── Type ───────────────────────────────────────────────────────────── */
+  --font-cormorant: 'Cormorant Garamond', Georgia, serif;
+  --font-inter:     'Inter', system-ui, sans-serif;
+  --font-space:     'Space Grotesk', 'Space Mono', monospace;
+  --font-display:   'Space Grotesk', 'Inter', sans-serif;
 }
 
-@layer base {
-  :root {
-    --vault-bg: #f8f9fb;
-    --vault-bg-alt: #eef1f5;
-    --vault-card: rgba(255, 255, 255, 0.75);
-    --vault-border: rgba(0, 0, 0, 0.08);
-    --vault-border-hover: rgba(0, 0, 0, 0.16);
-  }
-  .dark {
-    --vault-bg: #0a0b0f;
-    --vault-bg-alt: #111318;
-    --vault-card: rgba(255, 255, 255, 0.03);
-    --vault-border: rgba(255, 255, 255, 0.06);
-    --vault-border-hover: rgba(255, 255, 255, 0.15);
-  }
+.dark { color-scheme: dark; }
+
+/* ============================================================================
+   LIGHT THEME — warm paper palette. Cinematic sections opt back into .dark.
+   ========================================================================== */
+.light {
+  color-scheme: light;
+  --obsidian:      #F1ECE2;   /* warm paper page bg */
+  --vault:         #FFFFFF;   /* cards / panels */
+  --chamber:       #F7F3EB;
+  --chamber-2:     #ECE6DA;
+
+  --gold:          #9A7A2A;
+  --gold-bright:   #7E6320;
+  --crimson:       #CB2D22;
+  --ember:         #D85F1E;
+  --flame:         #C9881A;
+
+  --ivory:         #1C1B24;   /* primary text → ink */
+  --mist:          #5B5A6B;   /* muted text */
+  --mist-dim:      #8E8C9B;
+  --border-color:  #E6E0D4;
+  --border-bright: #D6CEBE;
+
+  --glow-gold:     rgba(154,122,42,0.16);
+  --glow-crimson:  rgba(203,45,34,0.12);
+  --glow-ember:    rgba(216,95,30,0.14);
+
+  --accent-tcg:     #1E6FE0;
+  --accent-figures: #9B2FD6;
+  --accent-watches: #9A7A2A;
+  --accent-restock: #0E9E78;
+
+  --accent-tcg-soft:     rgba(30,111,224,0.12);
+  --accent-figures-soft: rgba(155,47,214,0.12);
+  --accent-watches-soft: rgba(154,122,42,0.14);
+
+  --header-bg:     rgba(244,240,232,0.82);
 }
 
-/* ─── Base Styles ────────────────────────────────────────────────────────── */
+/* theme system active */
 
+/* ============================================================================
+   KEYFRAMES
+   ========================================================================== */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-14px) rotate(var(--rot, 0deg)); }
+}
+@keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--glow-crimson); }
+  50%      { opacity: 0.65; box-shadow: 0 0 0 7px transparent; }
+}
+@keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(242,118,46,0.40); }
+  50%      { box-shadow: 0 0 26px 5px rgba(242,118,46,0.16); }
+}
+@keyframes fade-up { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0,0,0) scale(1); }
+  50%      { transform: translate3d(2%, -2%, 0) scale(1.06); }
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(220%) skewX(-18deg); }
+}
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+@keyframes marquee-tag {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* ============================================================================
+   ANIMATION UTILITIES
+   ========================================================================== */
+.animate-ticker-scroll { animation: ticker-scroll linear infinite; }
+.animate-live-blink    { animation: live-blink 1.5s ease-in-out infinite; }
+.animate-pulse-glow    { animation: pulse-glow 2.4s ease-in-out infinite; }
+.animate-float         { animation: float 6.5s ease-in-out infinite; }
+.animate-pulse-dot     { animation: pulse-dot 1.6s ease-in-out infinite; }
+.animate-fade-up       { animation: fade-up 0.7s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-fade-in       { animation: fade-in 0.9s ease-out both; }
+.animate-aurora        { animation: aurora-drift 16s ease-in-out infinite; }
+
+/* ============================================================================
+   BASE
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
-  background-color: var(--color-vault-bg);
-  color: #1f2937;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  background: var(--obsidian);
+  color: var(--ivory);
+  font-family: var(--font-inter);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+::selection { background: rgba(242,118,46,0.30); color: var(--ivory); }
+
+/* Subtle film-grain texture for premium depth */
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 1;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.dark body {
-  color: #e5e7eb;
+/* ── Scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: var(--obsidian); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 999px; border: 3px solid var(--obsidian); }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ============================================================================
+   GRADIENT / TEXT HELPERS
+   ========================================================================== */
+.text-gradient-ember {
+  background: var(--grad-ember);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: gradient-pan 8s ease infinite;
+}
+.text-gradient-gold {
+  background: var(--grad-gold);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
 }
 
-/* ─── Scrollbar Utilities ────────────────────────────────────────────────── */
-
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Gradient border wrapper */
+.grad-border {
+  position: relative;
+  background: var(--vault);
+  border-radius: var(--radius-lg);
 }
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-
-/* Custom thin scrollbar for content areas */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
-}
-.dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.25);
-}
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+.grad-border::before {
+  content: ""; position: absolute; inset: 0;
+  border-radius: inherit; padding: 1px;
+  background: linear-gradient(135deg, var(--border-bright), transparent 45%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  pointer-events: none; transition: background 0.4s ease;
 }
 
-/* ─── Selection ──────────────────────────────────────────────────────────── */
-
-::selection {
-  background-color: rgba(245, 158, 11, 0.2);
-  color: inherit;
+/* ============================================================================
+   IMAGE TREATMENT — cinematic, brightens on hover
+   ========================================================================== */
+.collector-image {
+  filter: brightness(0.82) saturate(0.92) contrast(1.04);
+  transition: filter 0.5s ease, transform 0.6s cubic-bezier(0.22,1,0.36,1);
 }
-.dark ::selection {
-  background-color: rgba(245, 158, 11, 0.3);
+.story-card:hover .collector-image,
+.top-story:hover .collector-image {
+  filter: brightness(1) saturate(1.08) contrast(1.05);
+  transform: scale(1.05);
 }
 
-/* ─── Focus ring ─────────────────────────────────────────────────────────── */
+/* ============================================================================
+   CARD INTERACTIONS
+   ========================================================================== */
+.story-card {
+  position: relative;
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.35s ease, border-color 0.35s ease;
+}
+.story-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--card-accent, var(--gold)) !important;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.55),
+              0 0 0 1px var(--card-accent, var(--border-bright)),
+              0 0 38px -8px var(--card-glow, transparent);
+}
+.story-card .card-sheen {
+  position: absolute; top: 0; left: 0; width: 60%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.10), transparent);
+  pointer-events: none; opacity: 0; z-index: 4;
+}
+.story-card:hover .card-sheen { opacity: 1; animation: sheen 0.9s ease forwards; }
 
-*:focus-visible {
-  outline: 2px solid rgba(245, 158, 11, 0.5);
-  outline-offset: 2px;
-  border-radius: 4px;
+.top-story { transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease; }
+.top-story:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold) !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.6), 0 0 50px -12px var(--glow-ember);
+}
+.read-more { transition: transform 0.25s ease, gap 0.25s ease; }
+.top-story:hover .read-more, .story-card:hover .read-more { transform: translateX(4px); }
+.story-headline, .story-card h3 { transition: color 0.25s ease; }
+.top-story:hover .story-headline { color: var(--gold-bright) !important; }
+
+/* Category portal cards (CategoryRealms) */
+.realm-card {
+  position: relative; overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s ease;
+}
+.realm-card:hover { transform: translateY(-6px); }
+.realm-card .realm-glow { transition: opacity 0.45s ease, transform 0.6s ease; }
+.realm-card:hover .realm-glow { opacity: 1; transform: scale(1.1); }
+
+/* Pill / nav link underline grow */
+.nav-link { position: relative; }
+.nav-link::after {
+  content: ""; position: absolute; left: 0; bottom: -3px; height: 2px; width: 0;
+  background: var(--grad-ember); border-radius: 2px; transition: width 0.28s ease;
+}
+.nav-link:hover::after { width: 100%; }
+
+/* Editorial article drop-cap */
+.drop-cap::first-letter {
+  font-family: var(--font-cormorant);
+  font-size: 4.6em; font-weight: 600; font-style: italic;
+  float: left; line-height: 0.78; padding: 6px 14px 0 0;
+  background: var(--grad-ember);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+
+/* ============================================================================
+   CYBERPUNK HERO
+   ========================================================================== */
+:root {
+  --neon-red:  #FF2747;
+  --neon-cyan: #2BE7FF;
+  --neon-pink: #FF3DAE;
+}
+
+@keyframes cyber-flicker {
+  0%, 100% { opacity: 1; }
+  91% { opacity: 1; } 92% { opacity: 0.35; } 93% { opacity: 1; }
+  96% { opacity: 0.7; } 97% { opacity: 1; }
+}
+@keyframes grid-pan { from { background-position: 0 0; } to { background-position: 0 44px; } }
+@keyframes scan-sweep { 0% { transform: translateY(-120%); } 100% { transform: translateY(2200%); } }
+@keyframes feed-scroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+@keyframes rec-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.15; } }
+
+/* Perspective neon grid */
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(43,231,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(43,231,255,0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  animation: grid-pan 7s linear infinite;
+}
+
+/* CRT scanline overlay */
+.scanlines {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 2px, rgba(0,0,0,0.22) 3px, transparent 4px);
+  pointer-events: none;
+}
+
+/* Chromatic-aberration glitch text */
+.cyber-glitch {
+  text-shadow: 2px 0 var(--neon-cyan), -2px 0 var(--neon-red);
+  animation: cyber-flicker 5s infinite steps(1);
+}
+
+/* HUD neon frame with corner brackets */
+.neon-frame {
+  position: relative;
+  border: 1px solid rgba(43,231,255,0.35);
+  box-shadow: 0 0 36px -10px var(--neon-cyan), inset 0 0 50px -28px var(--neon-cyan);
+}
+.neon-frame::before, .neon-frame::after {
+  content: ""; position: absolute; width: 24px; height: 24px; border: 2px solid var(--neon-red); pointer-events: none;
+}
+.neon-frame::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.neon-frame::after  { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+.feed-scroll-track { animation: feed-scroll 24s linear infinite; }
+.animate-rec-blink { animation: rec-blink 1.1s steps(1) infinite; }
+.vert-label { writing-mode: vertical-rl; text-orientation: mixed; letter-spacing: 0.3em; }
+
+/* Hub background ken-burns drift */
+@keyframes kenburns-left  { 0%,100% { transform: scale(1.04) translate(0,0); } 50% { transform: scale(1.12) translate(2%, -2%); } }
+@keyframes kenburns-right { 0%,100% { transform: scale(1.04) translate(0,0); } 50% { transform: scale(1.12) translate(-2%, 2%); } }
+.kenburns-left  { animation: kenburns-left 26s ease-in-out infinite; }
+.kenburns-right { animation: kenburns-right 30s ease-in-out infinite; }
+
+/* Living "breathing" background for franchise article pages */
+@keyframes poke-breathe { 0%, 100% { filter: saturate(1.05) brightness(0.92); } 50% { filter: saturate(1.4) brightness(1.08); } }
+@keyframes poke-pulse   { 0%, 100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.85; transform: scale(1.14); } }
+.poke-pulse { animation: poke-pulse 7s ease-in-out infinite; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }

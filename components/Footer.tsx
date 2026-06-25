@@ -1,78 +1,79 @@
+'use client';
 import Link from 'next/link';
-import { Zap } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
 
+  // The Hub front door (/) and its alias ship their own footer.
+  if (pathname === '/' || pathname?.startsWith('/hub')) return null;
+
   return (
-    <footer className="relative mt-20 border-t border-[var(--color-vault-border)]">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--color-vault-bg-alt)]/50 to-[var(--color-vault-bg-alt)] pointer-events-none" />
-      
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <footer style={{ borderTop: '1px solid var(--border-color)', background: 'var(--vault)', marginTop: 'var(--space-3xl)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse 50% 80% at 85% 0%, var(--glow-ember), transparent 65%)' }} />
+      <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 relative">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-          
-          {/* Brand Column */}
-          <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-red-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-outfit text-base font-black tracking-tight text-gray-900 dark:text-white leading-none">
-                  THE COLLECTOR&apos;S
-                </span>
-                <span className="font-outfit text-[10px] font-bold tracking-[0.35em] text-amber-600 dark:text-amber-400 leading-none">
-                  PULSE
+
+          {/* Brand */}
+          <div>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div style={{ width: '36px', height: '36px', background: 'var(--grad-ember)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: '13px', fontWeight: 700, color: 'var(--on-accent)' }}>
+                  CP
+                </div>
+                <span style={{ fontFamily: 'var(--font-cormorant)', fontSize: '20px', fontWeight: 600, color: 'var(--ivory)' }}>
+                  The Collector&apos;s Pulse
                 </span>
               </div>
             </Link>
-            <p className="font-inter text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-xs">
-              AI-curated news and drop alerts for TCG, collectible figures, and luxury watches. Never miss a drop.
+            <p style={{ fontFamily: 'var(--font-inter)', fontSize: '14px', color: 'var(--mist)', lineHeight: 1.65, maxWidth: '300px' }}>
+              Daily news for card collectors, figure hunters, and watch enthusiasts — curated and summarized by AI the moment it breaks.
             </p>
           </div>
 
-          {/* Categories Column */}
+          {/* Categories */}
           <div>
-            <h3 className="font-outfit text-xs font-bold tracking-[0.2em] text-gray-400 dark:text-gray-500 uppercase mb-4">Categories</h3>
-            <ul className="space-y-2.5">
-              {['TCG', 'Figures', 'Watches'].map((cat) => (
-                <li key={cat}>
-                  <Link 
-                    href={`/?category=${cat.toLowerCase()}`} 
-                    className="font-inter text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                  >
-                    {cat}
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--mist-dim)', marginBottom: 'var(--space-lg)' }}>
+              Categories
+            </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+              {[
+                { label: 'Trading Cards', href: '/news?category=tcg', accent: 'var(--accent-tcg)' },
+                { label: 'Anime Figures', href: '/news?category=figures', accent: 'var(--accent-figures)' },
+                { label: 'Luxury Watches', href: '/news?category=watches', accent: 'var(--accent-watches)' },
+              ].map(({ label, href, accent }) => (
+                <li key={label} className="flex items-center gap-2.5">
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: accent, flexShrink: 0 }} />
+                  <Link href={href} style={{ fontFamily: 'var(--font-inter)', fontSize: '14px', color: 'var(--mist)', textDecoration: 'none' }}>
+                    {label}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* About Column */}
+          {/* About */}
           <div>
-            <h3 className="font-outfit text-xs font-bold tracking-[0.2em] text-gray-400 dark:text-gray-500 uppercase mb-4">About</h3>
-            <ul className="space-y-2.5">
-              <li>
-                <span className="font-inter text-sm text-gray-600 dark:text-gray-400">
-                  Powered by Gemini AI
-                </span>
-              </li>
-              <li>
-                <span className="font-inter text-sm text-gray-600 dark:text-gray-400">
-                  Data from Reddit, RSS, & more
-                </span>
-              </li>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '10px', fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--mist-dim)', marginBottom: 'var(--space-lg)' }}>
+              Powered by
+            </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '11px' }}>
+              {['Claude AI', 'Next.js', 'Supabase'].map((item) => (
+                <li key={item} style={{ fontFamily: 'var(--font-inter)', fontSize: '14px', color: 'var(--mist)' }}>
+                  {item}
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 border-t border-[var(--color-vault-border)] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-inter text-xs text-gray-400 dark:text-gray-600">
-            © {currentYear} The Collector&apos;s Pulse. All rights reserved.
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8" style={{ borderTop: '1px solid var(--border-color)' }}>
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '10px', color: 'var(--mist-dim)', letterSpacing: '0.04em' }}>
+            {`© ${currentYear} The Collector's Pulse`}
           </span>
-          <span className="font-inter text-xs text-gray-400 dark:text-gray-600">
-            Built with Next.js + Supabase + Gemini
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: '10px', color: 'var(--mist-dim)', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+            ✦ Curated by Claude AI ✦
           </span>
         </div>
       </div>

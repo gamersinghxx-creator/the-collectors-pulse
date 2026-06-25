@@ -1,42 +1,28 @@
 import NewsCard from './NewsCard';
 import { NewsItem } from '../types';
 
-interface BentoGridProps {
-  items: NewsItem[];
-}
+interface BentoGridProps { items: NewsItem[]; }
 
 export default function BentoGrid({ items }: BentoGridProps) {
-  const getSpanClasses = (index: number) => {
-    // 1st Card: Large Hero — spans 2 columns on desktop
-    if (index === 0) return 'md:col-span-2 md:row-span-2';
-    // 4th Card: Wide format
-    if (index === 3) return 'md:col-span-2';
-    // Default
-    return 'col-span-1 row-span-1';
-  };
-
   if (!items || items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-16 bg-[var(--color-vault-card)] backdrop-blur-md border border-[var(--color-vault-border)] rounded-2xl">
-        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-          <span className="text-3xl">📡</span>
-        </div>
-        <p className="font-outfit text-gray-500 dark:text-gray-400 text-lg text-center">No signals detected in the vault yet.</p>
-        <p className="font-inter text-gray-400 dark:text-gray-500 text-sm mt-2 text-center">Try selecting a different category or check back later.</p>
+      <div className="flex flex-col items-center justify-center p-16 text-center grad-border" style={{ borderRadius: 'var(--radius-lg)' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '11px', fontWeight: 600, color: 'var(--mist)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '8px' }}>No stories yet</div>
+        <p style={{ fontFamily: 'var(--font-cormorant)', fontSize: '22px', fontStyle: 'italic', color: 'var(--mist)' }}>Try a different category or check back later.</p>
       </div>
     );
   }
 
+  const [featured, ...rest] = items;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 auto-rows-[minmax(360px,auto)]">
-      {items.map((item, index) => (
-        <NewsCard 
-          key={item.id} 
-          item={item} 
-          index={index}
-          className={getSpanClasses(index)}
-        />
-      ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+      {featured && <NewsCard item={featured} index={0} featured={true} />}
+      {rest.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 'var(--space-lg)' }}>
+          {rest.map((item, i) => <NewsCard key={item.id} item={item} index={i + 1} />)}
+        </div>
+      )}
     </div>
   );
 }

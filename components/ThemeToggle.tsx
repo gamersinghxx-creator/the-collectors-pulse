@@ -5,39 +5,36 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
 
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  React.useEffect(() => { setMounted(true); }, []);
+
+  const isDark = resolvedTheme === 'dark';
+
+  const base: React.CSSProperties = {
+    width: '38px', height: '38px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    borderRadius: 'var(--radius-pill)', border: '1px solid var(--border-bright)',
+    background: 'rgba(127,127,127,0.06)', color: 'var(--mist)', cursor: 'pointer',
+    transition: 'color 0.2s ease, border-color 0.2s ease, background 0.2s ease',
+  };
 
   if (!mounted) {
-    return (
-      <button
-        disabled
-        className="p-2 rounded-lg bg-[var(--color-vault-card)] border border-[var(--color-vault-border)] text-transparent opacity-50 cursor-not-allowed"
-        aria-label="Toggle theme"
-      >
-        <div className="h-5 w-5" />
-      </button>
-    );
+    return <button aria-label="Toggle theme" style={{ ...base, cursor: 'default', opacity: 0.5 }}><span style={{ width: 16, height: 16 }} /></button>;
   }
 
   return (
     <button
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-      className="p-2 rounded-lg bg-[var(--color-vault-card)] border border-[var(--color-vault-border)] text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
-      aria-label="Toggle theme"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={isDark ? 'Light mode' : 'Dark mode'}
+      style={base}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--gold)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--gold)'; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--mist)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-bright)'; }}
     >
-      {theme === 'dark' ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
     </button>
   );
 }
+
+export default ThemeToggle;

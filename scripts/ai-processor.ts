@@ -12,15 +12,22 @@ if (!process.env.GEMINI_API_KEY) {
   process.exit(1);
 }
 
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error('\n[AI] ⚠ Supabase is not configured.');
+  console.error('[AI]   Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local');
+  console.error('[AI]   (see SUPABASE_SETUP.md). The AI processor needs a database to read from.\n');
+  process.exit(1);
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
+const model = genAI.getGenerativeModel({
   model: "gemini-flash-latest",
   generationConfig: { responseMimeType: "application/json" }
 });
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 async function processPendingItems() {

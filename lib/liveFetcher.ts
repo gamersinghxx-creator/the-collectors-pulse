@@ -1,21 +1,22 @@
 import { NewsItem } from '../types';
 import { resolveArticleImage } from './resolveArticleImage';
+import { mockItems } from './mockData';
 
 const FEEDS = [
-  { 
-    url: 'https://news.google.com/rss/search?q=pokemon+tcg+or+one+piece+card+game+cards&hl=en-US&gl=US&ceid=US:en', 
-    category: 'TCG', 
-    fallbackSource: 'TCG News' 
+  {
+    url: 'https://news.google.com/rss/search?q=%22pokemon+tcg%22+OR+%22one+piece+card+game%22+OR+%22magic+the+gathering%22+OR+%22lorcana%22+OR+%22trading+cards%22&hl=en-US&gl=US&ceid=US:en',
+    category: 'TCG',
+    fallbackSource: 'TCG News'
   },
-  { 
-    url: 'https://news.google.com/rss/search?q=anime+figures+shfiguarts+nendoroid+toys+statues&hl=en-US&gl=US&ceid=US:en', 
-    category: 'Figures', 
-    fallbackSource: 'Figure News' 
+  {
+    url: 'https://news.google.com/rss/search?q=%22anime+figure%22+OR+nendoroid+OR+%22shfiguarts%22+OR+%22funko+pop%22+OR+%22scale+figure%22+OR+%22action+figure%22&hl=en-US&gl=US&ceid=US:en',
+    category: 'Figures',
+    fallbackSource: 'Figure News'
   },
-  { 
-    url: 'https://news.google.com/rss/search?q=luxury+watches+rolex+omega+submariner+chronograph&hl=en-US&gl=US&ceid=US:en', 
-    category: 'Watches', 
-    fallbackSource: 'Watch News' 
+  {
+    url: 'https://news.google.com/rss/search?q=%22luxury+watches%22+OR+rolex+OR+%22omega+watch%22+OR+%22patek+philippe%22+OR+%22audemars+piguet%22+OR+%22grand+seiko%22+OR+%22watch+release%22&hl=en-US&gl=US&ceid=US:en',
+    category: 'Watches',
+    fallbackSource: 'Watch News'
   }
 ];
 
@@ -52,15 +53,20 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
     const promises = FEEDS.map(async (feed) => {
       try {
         console.log(`[LiveFetcher] Querying Google News RSS for ${feed.category}...`);
-        const res = await fetch(feed.url, FETCH_OPTIONS);
-        
-        if (!res.ok) {
-          console.error(`[LiveFetcher] Google News API failed for ${feed.category}: Status ${res.status}`);
-          return [];
+
+        // Fetch with one retry — Google News occasionally throttles bursts.
+        let xmlText = '';
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const res = await fetch(feed.url, FETCH_OPTIONS);
+            if (res.ok) { xmlText = await res.text(); if (xmlText.includes('<item>')) break; }
+            else console.error(`[LiveFetcher] ${feed.category} status ${res.status} (attempt ${attempt + 1})`);
+          } catch (e) {
+            console.error(`[LiveFetcher] ${feed.category} fetch error (attempt ${attempt + 1}):`, (e as Error).message);
+          }
+          if (attempt === 0) await new Promise(r => setTimeout(r, 600));
         }
 
-        const xmlText = await res.text();
-        
         // Find item tags
         const itemsMatch = xmlText.match(/<item>([\s\S]*?)<\/item>/g) || [];
         console.log(`[LiveFetcher] Found ${itemsMatch.length} raw elements for ${feed.category}`);
@@ -75,6 +81,14 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
           const rawLink = linkMatch ? linkMatch[1] : '';
           const rawDate = dateMatch ? dateMatch[1] : '';
           const rawDesc = descMatch ? descMatch[1] : '';
+
+          // Article-specific image straight from the feed item, if present.
+          const mediaMatch =
+            itemXml.match(/<media:content[^>]*\burl=["']([^"']+)["'][^>]*>/i) ||
+            itemXml.match(/<media:thumbnail[^>]*\burl=["']([^"']+)["'][^>]*>/i) ||
+            itemXml.match(/<enclosure[^>]*\burl=["']([^"']+)["'][^>]*type=["']image\//i) ||
+            rawDesc.match(/<img[^>]+src=["']([^"']+)["']/i);
+          const feedImage = mediaMatch ? mediaMatch[1].replace(/&amp;/g, '&').trim() : '';
 
           let fullTitle = cleanXMLText(rawTitle);
           const sourceUrl = cleanXMLText(rawLink);
@@ -106,9 +120,9 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
 
           const publishedDate = rawDate ? new Date(rawDate) : new Date();
           const ageMs = Date.now() - publishedDate.getTime();
-          const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-          
-          if (ageMs > THIRTY_DAYS_MS) {
+          // Keep ~6 months so less-frequent feeds (figures / watches) aren't emptied.
+          const MAX_AGE_MS = 180 * 24 * 60 * 60 * 1000;
+          if (rawDate && ageMs > MAX_AGE_MS) {
             return null;
           }
 
@@ -126,6 +140,7 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
             hype_score: hype,
             engagement_count: hype * 140 + Math.floor(Math.random() * 100),
             image_url: imageUrl,
+            thumbnail_url: feedImage,
             is_drop_alert: hype >= 9,
             is_restock: textToScore.includes('restock') || textToScore.includes('back in stock') || textToScore.includes('re-release'),
             is_trending: hype >= 8,
@@ -152,11 +167,25 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
       self.findIndex(t => t.id === item.id) === index
     );
 
+    // Guarantee every category has content. If a feed returned nothing usable,
+    // supplement that category from the built-in editorial set so Figures /
+    // Watches blogs are never empty.
+    for (const cat of ['TCG', 'Figures', 'Watches']) {
+      const hasCat = uniqueItems.some(i => i.category.toUpperCase() === cat.toUpperCase());
+      if (!hasCat) {
+        const filler = mockItems.filter(m => m.category.toUpperCase() === cat.toUpperCase());
+        if (filler.length > 0) {
+          console.log(`[LiveFetcher] No live ${cat} items — backfilling ${filler.length} from editorial set.`);
+          uniqueItems.push(...filler);
+        }
+      }
+    }
+
     // Resolve images in parallel for all items via the OG → AI → fallback pipeline
     console.log(`[LiveFetcher] Resolving images for ${uniqueItems.length} articles...`);
     const imageResults = await Promise.allSettled(
       uniqueItems.map(item =>
-        resolveArticleImage(item.source_url, item.title, item.category, item.slug)
+        resolveArticleImage(item.source_url, item.title, item.category, item.slug, item.thumbnail_url)
       )
     );
 

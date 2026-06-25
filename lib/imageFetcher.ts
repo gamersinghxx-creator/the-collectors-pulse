@@ -2,7 +2,7 @@ import { existsSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
 import { join, extname } from 'path';
 
 const ARTICLES_DIR = join(process.cwd(), 'public', 'images', 'articles');
-const FETCH_TIMEOUT_MS = 5000;
+const FETCH_TIMEOUT_MS = 8000;
 
 // Ensure directory exists
 function ensureDir(dir: string) {
@@ -19,7 +19,7 @@ export function getCachedArticleImage(slug: string): string | null {
   ensureDir(ARTICLES_DIR);
   try {
     const files = readdirSync(ARTICLES_DIR);
-    const match = files.find(f => f.startsWith(slug + '.'));
+    const match = files.find(f => f.startsWith(slug + '.v3.'));
     if (match) {
       return `/images/articles/${match}`;
     }
@@ -231,70 +231,61 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
 
     reader.cancel();
 
-    // 1. Extract og:image
-    const ogImageMatch = html.match(
-      /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i
-    ) || html.match(
-      /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i
-    );
+    const absolutize = (u: string): string => {
+      try {
+        if (u.startsWith('//')) return 'https:' + u;
+        if (u.startsWith('/')) return new URL(resolvedUrl).origin + u;
+        if (!/^https?:\/\//i.test(u)) return new URL(resolvedUrl).origin + '/' + u;
+      } catch { /* ignore */ }
+      return u;
+    };
+    const pick = (re: RegExp): string | undefined => html.match(re)?.[1];
 
-    if (ogImageMatch?.[1]) {
-      console.log(`[ImageFetcher] Found OG image for ${resolvedUrl.slice(0, 50)}...`);
-      return ogImageMatch[1];
+    // 1. Article-specific metadata images, in order of reliability.
+    const metaCandidates = [
+      pick(/<meta[^>]+property=["']og:image:secure_url["'][^>]+content=["']([^"']+)["']/i),
+      pick(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i),
+      pick(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i),
+      pick(/<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i),
+      pick(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']twitter:image(?::src)?["']/i),
+      pick(/<link[^>]+rel=["']image_src["'][^>]+href=["']([^"']+)["']/i),
+      // JSON-LD "image" (string or { url })
+      pick(/"image"\s*:\s*"([^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i),
+      pick(/"image"\s*:\s*\{[^}]*?"url"\s*:\s*"([^"]+)"/i),
+    ].filter((u): u is string => !!u && !u.startsWith('data:'));
+
+    if (metaCandidates.length > 0) {
+      console.log(`[ImageFetcher] Found meta image for ${resolvedUrl.slice(0, 50)}...`);
+      return absolutize(metaCandidates[0]);
     }
 
-    // 2. Fallback: twitter:image
-    const twitterImageMatch = html.match(
-      /<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i
-    ) || html.match(
-      /<meta[^>]*content=["']([^"']+)["'][^>]*(?:name|property)=["']twitter:image["']/i
-    );
-
-    if (twitterImageMatch?.[1]) {
-      console.log(`[ImageFetcher] Found Twitter image for ${resolvedUrl.slice(0, 50)}...`);
-      return twitterImageMatch[1];
+    // 2. Content-aware fallback: the LARGEST genuine content image on the page.
+    // We rank by declared dimensions and content-path hints, and skip ads/logos/
+    // icons/trackers — this avoids the "first random ad" mistake from before.
+    const EXCLUDE = ['logo', 'icon', 'avatar', 'sprite', 'pixel', 'spacer', 'tracking', '/ad/', '/ads/', 'advert', 'banner', 'button', 'badge', 'social', 'facebook', 'twitter', 'instagram', 'linkedin', 'pinterest', 'youtube', 'whatsapp', 'emoji', 'favicon', 'placeholder', 'loading', 'spinner', '1x1', 'blank', 'gravatar'];
+    const CONTENT_HINT = /\/(uploads|wp-content|media|image[s]?|photo[s]?|cdn|static|assets|content)\//i;
+    const imgTags = html.match(/<img\b[^>]*>/gi) || [];
+    let best: string | null = null;
+    let bestScore = 0;
+    for (const tag of imgTags) {
+      const src = (tag.match(/\bsrc=["']([^"']+)["']/i) || tag.match(/\bdata-src=["']([^"']+)["']/i))?.[1];
+      if (!src || src.startsWith('data:')) continue;
+      const low = src.toLowerCase();
+      if (EXCLUDE.some(k => low.includes(k))) continue;
+      if (!/\.(jpe?g|png|webp)/i.test(low) && !CONTENT_HINT.test(low)) continue;
+      const w = parseInt((tag.match(/\bwidth=["']?(\d+)/i) || [])[1] || '0', 10);
+      const h = parseInt((tag.match(/\bheight=["']?(\d+)/i) || [])[1] || '0', 10);
+      const area = w * h;
+      let score = area;
+      if (!area && CONTENT_HINT.test(low)) score = 120000; // likely a content image, dims not declared
+      if (score > bestScore && (area >= 80000 || (!area && score >= 120000))) { bestScore = score; best = src; }
+    }
+    if (best) {
+      console.log(`[ImageFetcher] Using largest content image for ${resolvedUrl.slice(0, 50)}...`);
+      return absolutize(best);
     }
 
-    // 3. Fallback: Scrape inline body images
-    const imgMatches = html.match(/<img[^>]+src=["']([^"']+)["']/gi) || [];
-    for (const imgTag of imgMatches) {
-      const srcMatch = imgTag.match(/src=["']([^"']+)["']/i);
-      if (srcMatch?.[1]) {
-        const imgUrl = srcMatch[1];
-        const lowercaseImgUrl = imgUrl.toLowerCase();
-        
-        // Skip base64, tracking pixels, logos, avatars, icons, and buttons
-        const isExcluded = [
-          'logo', 'icon', 'avatar', 'spacer', 'pixel', 'ad', 'banner', 'button', 'sprite',
-          'loading', 'spinner', 'placeholder', 'header', 'footer', 'social', 'facebook',
-          'twitter', 'instagram', 'linkedin', 'pinterest', 'youtube', 'github', 'arrow',
-          'chevron', 'check', 'close', 'search', 'menu'
-        ].some(keyword => lowercaseImgUrl.includes(keyword)) ||
-        imgUrl.startsWith('data:');
-
-        if (!isExcluded) {
-          // Resolve relative URLs to absolute URLs
-          let absoluteImgUrl = imgUrl;
-          try {
-            if (imgUrl.startsWith('//')) {
-              absoluteImgUrl = 'https:' + imgUrl;
-            } else if (imgUrl.startsWith('/')) {
-              const parsedBase = new URL(resolvedUrl);
-              absoluteImgUrl = parsedBase.origin + imgUrl;
-            } else if (!imgUrl.startsWith('http://') && !imgUrl.startsWith('https://')) {
-              const parsedBase = new URL(resolvedUrl);
-              absoluteImgUrl = parsedBase.origin + '/' + imgUrl;
-            }
-            console.log(`[ImageFetcher] Scraped high-quality fallback body image: ${absoluteImgUrl}`);
-            return absoluteImgUrl;
-          } catch {
-            // Ignore parse errors for badly formatted URLs
-          }
-        }
-      }
-    }
-
-    console.log(`[ImageFetcher] No usable image found in ${resolvedUrl.slice(0, 60)}...`);
+    console.log(`[ImageFetcher] No usable image for ${resolvedUrl.slice(0, 60)}... — using category fallback.`);
     return null;
   } catch (err) {
     console.log(`[ImageFetcher] Failed to extract image from ${sourceUrl.slice(0, 60)}...: ${(err as Error).message}`);
@@ -306,7 +297,7 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
  * Download an image from a URL and save it locally.
  * Returns the public-relative path or null on failure.
  */
-async function downloadImage(imageUrl: string, slug: string): Promise<string | null> {
+export async function downloadImage(imageUrl: string, slug: string): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -348,7 +339,7 @@ async function downloadImage(imageUrl: string, slug: string): Promise<string | n
     }
 
     ensureDir(ARTICLES_DIR);
-    const filename = `${slug}${ext}`;
+    const filename = `${slug}.v3${ext}`;
     const filepath = join(ARTICLES_DIR, filename);
     writeFileSync(filepath, buffer);
 
@@ -375,21 +366,29 @@ export async function fetchArticleImage(sourceUrl: string, slug: string): Promis
 
   // 2. Decode Google News redirect URLs if applicable
   if (sourceUrl.includes('news.google.com')) {
-    console.log(`[ImageFetcher] Decoding Google News URL: ${sourceUrl.slice(0, 60)}...`);
     const decoded = await decodeGoogleNewsUrl(sourceUrl);
-    if (decoded) {
+    if (decoded && !decoded.includes('news.google.com')) {
       targetUrl = decoded;
     } else {
-      console.log('[ImageFetcher] Could not decode Google News URL, falling back to original redirect');
+      // Can't reach the real article — do NOT scrape Google's interstitial page,
+      // whose share image is the Google News logo. Use a category fallback instead.
+      console.log('[ImageFetcher] Could not decode Google News URL — skipping (avoids Google logo).');
+      return null;
     }
   }
 
-  // 3. Extract best available image URL (OG, Twitter, or body scraper fallback)
+  // 3. Extract best available image URL
   const imageUrl = await extractOGImage(targetUrl);
   if (!imageUrl) {
     return null;
   }
 
-  // 4. Download and cache
+  // 4. Reject known generic / platform logos that aren't real article art.
+  if (/gstatic\.com|googlelogo|google[_-]?news|\/news\/.*logo|lh\d\.googleusercontent\.com\/[^"']*=w\d{2,3}-h\d{2,3}/i.test(imageUrl)) {
+    console.log('[ImageFetcher] Rejected generic platform logo image.');
+    return null;
+  }
+
+  // 5. Download and cache
   return await downloadImage(imageUrl, slug);
 }

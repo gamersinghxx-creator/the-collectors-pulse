@@ -4,10 +4,16 @@ import path from 'path';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+const SUPABASE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+const supabase = SUPABASE_CONFIGURED
+  ? createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+      process.env.SUPABASE_SERVICE_ROLE_KEY as string
+    )
+  : null;
 
 const SUBREDDITS = [
   { name: 'PokemonTCG', category: 'TCG' },
@@ -17,12 +23,46 @@ const SUBREDDITS = [
   { name: 'rolex', category: 'Watches' }
 ];
 
-// Fallback headers to avoid Reddit blocking basic fetch requests
-const FETCH_OPTIONS = {
-  headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-  }
+const HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'application/json,text/html;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
 };
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+/**
+ * Resilient Reddit fetch. Reddit frequently 403/429s plain requests, so we rotate
+ * hosts (www / old) and listings (new / hot) with retry + backoff.
+ * Returns the array of post "children", or [] if every attempt fails.
+ */
+async function fetchRedditPosts(name: string): Promise<any[]> {
+  const endpoints = [
+    `https://www.reddit.com/r/${name}/new.json?limit=15`,
+    `https://old.reddit.com/r/${name}/new.json?limit=15`,
+    `https://www.reddit.com/r/${name}/hot.json?limit=15`,
+  ];
+  for (const url of endpoints) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch(url, { headers: HEADERS });
+        if (res.ok) {
+          const json = await res.json();
+          const children = json?.data?.children || [];
+          if (children.length > 0) return children;
+        } else if (res.status === 429 || res.status === 403) {
+          console.warn(`[Scraper]   r/${name} ${res.status} on ${new URL(url).host} (try ${attempt + 1}) — backing off`);
+          await sleep(1500 * (attempt + 1));
+          continue;
+        }
+      } catch (e) {
+        console.warn(`[Scraper]   r/${name} error: ${(e as Error).message}`);
+      }
+      await sleep(500);
+    }
+  }
+  return [];
+}
 
 function generateSlug(title: string, id: string) {
   const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 50);
@@ -30,22 +70,25 @@ function generateSlug(title: string, id: string) {
 }
 
 async function scrapeReddit() {
+  if (!SUPABASE_CONFIGURED || !supabase) {
+    console.error('\n[Scraper] ⚠ Supabase is not configured — skipping Reddit ingestion.');
+    console.error('[Scraper]   Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local (see SUPABASE_SETUP.md).\n');
+    return;
+  }
+
   console.log("[Scraper] Starting Reddit Live Data Ingestion...");
-  
+
   let totalInserted = 0;
 
   for (const sub of SUBREDDITS) {
     console.log(`[Scraper] Fetching r/${sub.name}...`);
     try {
-      const response = await fetch(`https://www.reddit.com/r/${sub.name}/new.json?limit=10`, FETCH_OPTIONS);
-      
-      if (!response.ok) {
-        console.error(`[Scraper] Failed to fetch r/${sub.name}: ${response.statusText}`);
+      const posts = await fetchRedditPosts(sub.name);
+
+      if (posts.length === 0) {
+        console.error(`[Scraper] r/${sub.name}: Reddit blocked all endpoints — skipping this round.`);
         continue;
       }
-
-      const json = await response.json();
-      const posts = json.data?.children || [];
 
       const formattedItems = posts
         .filter((post: any) => !post.data.stickied && !post.data.is_video)

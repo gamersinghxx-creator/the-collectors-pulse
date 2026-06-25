@@ -1,55 +1,46 @@
-import { fetchArticleImage, getCachedArticleImage } from './imageFetcher';
-import { getCachedGeneratedImage } from './imageGenerator'; // Keep cache check for previously generated images
-import { generateLocalFallbackImage } from './svgGenerator';
+import { fetchArticleImage, getCachedArticleImage, downloadImage } from './imageFetcher';
 import { getFallbackImage } from './constants';
 
 /**
- * Resolve the best available image for an article through a tiered pipeline:
- * 1. Check local cache (previously fetched or generated)
- * 2. Try fetching and scraping image from the article's source URL
- * 3. Try generating a local dynamic SVG image based on title/category keywords
- * 4. Fall back to category-specific static image
+ * Resolve the best available image for an article:
+ * 1. Cached (already downloaded) image
+ * 2. Feed-provided image (media:content / enclosure) — article-specific
+ * 3. og:image / twitter:image / largest content image from the source
+ * 4. Captivating category photo (never an ugly generated box)
  *
- * Returns a public-relative path string (e.g., "/images/articles/slug.jpg")
+ * Returns a public-relative path string.
  */
 export async function resolveArticleImage(
   sourceUrl: string,
   title: string,
   category: string,
-  slug: string
+  slug: string,
+  feedImageUrl?: string
 ): Promise<string> {
-  // 1. Check if we already have a cached article image (OG-sourced or scraped)
+  // 1. Already downloaded for this article
   const cachedArticle = getCachedArticleImage(slug);
   if (cachedArticle) {
     return cachedArticle;
   }
 
-  // 2. Check if we already have a cached generated image (from legacy runs)
-  const cachedGenerated = getCachedGeneratedImage(slug);
-  if (cachedGenerated) {
-    return cachedGenerated;
+  // 2. Image straight from the RSS item
+  if (feedImageUrl && /^https?:\/\//i.test(feedImageUrl)) {
+    try {
+      const fromFeed = await downloadImage(feedImageUrl, slug);
+      if (fromFeed) return fromFeed;
+    } catch (err) {
+      console.log(`[ResolveImage] Feed image failed for ${slug}:`, (err as Error).message);
+    }
   }
 
-  // 3. Try fetching and scraping image from the source URL
+  // 3. Real image from the source article
   try {
     const ogImage = await fetchArticleImage(sourceUrl, slug);
-    if (ogImage) {
-      return ogImage;
-    }
+    if (ogImage) return ogImage;
   } catch (err) {
-    console.log(`[ResolveImage] Source fetch/scrape failed for ${slug}:`, (err as Error).message);
+    console.log(`[ResolveImage] Source fetch failed for ${slug}:`, (err as Error).message);
   }
 
-  // 4. Try local dynamic SVG generation based on keywords
-  try {
-    const localSvg = generateLocalFallbackImage(title, category, slug);
-    if (localSvg) {
-      return localSvg;
-    }
-  } catch (err) {
-    console.log(`[ResolveImage] Local SVG generation failed for ${slug}:`, (err as Error).message);
-  }
-
-  // 5. Final fallback: static category image
+  // 4. Captivating category photo (no generated placeholder boxes).
   return getFallbackImage(category);
 }
