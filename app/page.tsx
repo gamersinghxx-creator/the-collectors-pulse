@@ -5,7 +5,7 @@ import HubLanding from '../components/HubLanding';
 import AutoRefresh from '../components/AutoRefresh';
 import { mockItems } from '../lib/mockData';
 import { supabase } from '../lib/supabase/client';
-import { fetchLiveMarketData } from '../lib/liveFetcher';
+import { getCachedLiveFeed } from '../lib/liveFetcher';
 import { NewsItem } from '../types';
 
 export default async function HomePage() {
@@ -26,7 +26,7 @@ export default async function HomePage() {
   }
 
   if (rawItems.length === 0) {
-    try { rawItems = await fetchLiveMarketData(); } catch { /* fallback */ }
+    try { rawItems = await getCachedLiveFeed(); } catch { /* fallback */ }
   }
   if (rawItems.length === 0) rawItems = mockItems;
 

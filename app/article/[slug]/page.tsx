@@ -1,22 +1,42 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
+import { unstable_cache } from 'next/cache';
 import { supabase } from '../../../lib/supabase/client';
+import { getCachedLiveFeed } from '../../../lib/liveFetcher';
 import { fetchArticleContent } from '../../../lib/articleContent';
 import { generateArticleBody } from '../../../lib/generateArticle';
 import LivingBackground from '../../../components/LivingBackground';
 import { mockItems } from '../../../lib/mockData';
-
-// Per-process cache so we don't re-extract / re-generate the body on every view.
-const bodyCache = new Map<string, string>();
 import { BLUR_DATA_URL } from '../../../lib/constants';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { NewsItem } from '../../../types';
+
+// Build + cache the detailed article body per slug (computed once, reused ~1 day).
+const getArticleBody = unstable_cache(
+  async (slug: string, sourceUrl: string, title: string, category: string, sourceName: string, summary: string): Promise<string> => {
+    let body = summary || '';
+    try {
+      const sourced = await fetchArticleContent(sourceUrl);
+      if (sourced && sourced.length > body.length) body = sourced;
+    } catch { /* keep fallback */ }
+    if (body.replace(/\s+/g, ' ').trim().length < 420) {
+      try {
+        const ai = await generateArticleBody(title, category, body, sourceName);
+        if (ai && ai.length > body.length) body = ai;
+      } catch { /* keep fallback */ }
+    }
+    return body;
+  },
+  ['article-body-v1'],
+  { revalidate: 86400 }
+);
 
 const CATEGORY_COLOR: Record<string, string> = {
   tcg: 'var(--accent-tcg)',
@@ -53,11 +73,29 @@ async function getAllItems(): Promise<NewsItem[]> {
     }
   } catch { /* fallback */ }
   try {
-    const { fetchLiveMarketData } = await import('../../../lib/liveFetcher');
-    const live = await fetchLiveMarketData();
+    const live = await getCachedLiveFeed();
     if (live.length > 0) return live;
   } catch { /* fallback */ }
   return mockItems;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const items = await getAllItems();
+  const item = items.find(i => i.slug === slug);
+  if (!item) return { title: "Article | The Collector's Pulse" };
+  const desc = (item.summary_short || item.summary_full || '').slice(0, 160);
+  return {
+    title: `${item.title} | The Collector's Pulse`,
+    description: desc,
+    openGraph: {
+      title: item.title,
+      description: desc,
+      type: 'article',
+      images: item.image_url ? [item.image_url] : undefined,
+    },
+    twitter: { card: 'summary_large_image', title: item.title, description: desc },
+  };
 }
 
 export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -89,29 +127,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const isWatch = catKey === 'watches';
   const isFigure = catKey === 'figures' && !isPokemon;
 
-  // Build a detailed, on-site readable body:
-  // 1) real excerpt extracted from the source, else
-  // 2) an original AI-written article, else
-  // 3) the existing summary.
-  let bodyText = item.summary_full || item.summary_short || '';
-  const cached = bodyCache.get(item.slug);
-  if (cached) {
-    bodyText = cached;
-  } else {
-    try {
-      const sourced = await fetchArticleContent(item.source_url);
-      if (sourced && sourced.length > bodyText.length) bodyText = sourced;
-    } catch { /* keep fallback */ }
-
-    // If still thin, generate an original detailed article (on-brand AI curation).
-    if (bodyText.replace(/\s+/g, ' ').trim().length < 420) {
-      try {
-        const ai = await generateArticleBody(item.title, item.category, bodyText, item.source_name);
-        if (ai && ai.length > bodyText.length) bodyText = ai;
-      } catch { /* keep fallback */ }
-    }
-    if (bodyText.replace(/\s+/g, ' ').trim().length >= 200) bodyCache.set(item.slug, bodyText);
-  }
+  // Detailed, on-site readable body (cached per slug): real source excerpt →
+  // original AI-written article → existing summary.
+  const bodyText = await getArticleBody(
+    item.slug, item.source_url, item.title, item.category, item.source_name,
+    item.summary_full || item.summary_short || ''
+  );
 
   const paragraphs = bodyText
     .split('\n')

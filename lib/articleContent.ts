@@ -34,7 +34,7 @@ export async function fetchArticleContent(sourceUrl: string): Promise<string | n
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(target, {
       signal: controller.signal,
       headers: { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml' },

@@ -3,6 +3,9 @@ import { join, extname } from 'path';
 
 const ARTICLES_DIR = join(process.cwd(), 'public', 'images', 'articles');
 const FETCH_TIMEOUT_MS = 8000;
+// On Vercel (and other serverless hosts) the filesystem is read-only, so we
+// can't download images to /public. There we serve the remote URL directly.
+const IS_SERVERLESS = !!process.env.VERCEL;
 
 // Ensure directory exists
 function ensureDir(dir: string) {
@@ -298,6 +301,10 @@ async function extractOGImage(sourceUrl: string): Promise<string | null> {
  * Returns the public-relative path or null on failure.
  */
 export async function downloadImage(imageUrl: string, slug: string): Promise<string | null> {
+  // Serverless: don't write to disk — serve the remote URL directly.
+  if (IS_SERVERLESS) {
+    return /^https?:\/\//i.test(imageUrl) ? imageUrl : null;
+  }
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);

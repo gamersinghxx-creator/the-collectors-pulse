@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { NewsItem } from '../types';
 import { resolveArticleImage } from './resolveArticleImage';
 import { mockItems } from './mockData';
@@ -202,3 +203,14 @@ export async function fetchLiveMarketData(): Promise<NewsItem[]> {
     return [];
   }
 }
+
+/**
+ * Cached feed shared across the home, newsroom and article pages. The expensive
+ * work (RSS parse + image resolution) runs once and is reused for ~90s, so
+ * navigating into an article no longer re-fetches and re-resolves every item.
+ */
+export const getCachedLiveFeed = unstable_cache(
+  async (): Promise<NewsItem[]> => fetchLiveMarketData(),
+  ['live-market-feed-v1'],
+  { revalidate: 90 }
+);
